@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+/* Custom Colors */
+:root {
+  --wine-primary: #722F37;
+  --wine-secondary: #8B3A3A;
+  --wine-dark: #5D2428;
+  --wine-light: #A64B4B;
+  
+  --lead-gray: #4A4A4A;
+  --lead-gray-light: #6B6B6B;
+  --lead-gray-dark: #2F2F2F;
+  --lead-gray-lighter: #8A8A8A;
+  
+  --background-primary: #F5F3F4;
+  --background-secondary: #E8E5E6;
+}
+
+/* Custom Component Styles */
+@layer components {
+  .text-wine-primary {
+    color: var(--wine-primary);
+  }
+  
+  .bg-wine-primary {
+    background-color: var(--wine-primary);
+  }
+  
+  .bg-wine-secondary {
+    background-color: var(--wine-secondary);
+  }
+  
+  .border-wine-primary {
+    border-color: var(--wine-primary);
+  }
+  
+  .hover\:text-wine-primary:hover {
+    color: var(--wine-primary);
+  }
+  
+  .hover\:bg-wine-secondary:hover {
+    background-color: var(--wine-secondary);
+  }
+  
+  .btn-wine {
+    @apply text-white px-4 py-2 rounded-lg font-semibold transition-all duration-300;
+    background-color: var(--wine-primary);
+  }
+  
+  .btn-wine:hover {
+    background-color: var(--wine-secondary);
+  }
+  
+  .btn-lead {
+    @apply text-white px-4 py-2 rounded-lg font-semibold transition-all duration-300;
+    background-color: var(--lead-gray);
+  }
+  
+  .btn-lead:hover {
+    background-color: var(--lead-gray-light);
+  }
+  
+  .from-wine-primary {
+    --tw-gradient-from: var(--wine-primary) var(--tw-gradient-from-position);
+    --tw-gradient-to: rgb(114 47 55 / 0) var(--tw-gradient-to-position);
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+  }
+  
+  .to-lead-primary {
+    --tw-gradient-to: var(--lead-gray) var(--tw-gradient-to-position);
+  }
+}

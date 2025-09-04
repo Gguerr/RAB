@@ -1,0 +1,11 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  employee: one
+  code: MyString
+  serial_number: MyString
+
+two:
+  employee: two
+  code: MyString
+  serial_number: MyString

@@ -1,0 +1,15 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  employee: one
+  names: MyString
+  birth_date: 2025-09-03
+  education_level: MyString
+  relationship: MyString
+
+two:
+  employee: two
+  names: MyString
+  birth_date: 2025-09-03
+  education_level: MyString
+  relationship: MyString

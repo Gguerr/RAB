@@ -1,0 +1,408 @@
+<%= form_with model: [:admin, @employee], class: "max-w-6xl mx-auto space-y-8", local: true do |form| %>
+  <% if @employee.errors.any? %>
+    <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+      <h4 class="font-semibold mb-2"><%= pluralize(@employee.errors.count, "error") %> impidieron guardar el empleado:</h4>
+      <ul class="list-disc list-inside space-y-1">
+        <% @employee.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <!-- Información Personal -->
+  <div class="bg-white rounded-xl shadow-lg p-6">
+    <h3 class="text-wine-primary text-xl font-bold mb-6 pb-3 border-b-2 border-gray-100">📋 Información Personal</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div>
+        <%= form.label :identification_number, "Cédula de Identidad", class: "block text-gray-700 font-semibold mb-2" %>
+        <%= form.text_field :identification_number, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", placeholder: "12345678" %>
+      </div>
+
+      <div>
+        <%= form.label :names, "Nombres", class: "block text-gray-700 font-semibold mb-2" %>
+        <%= form.text_field :names, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", placeholder: "Juan Carlos" %>
+      </div>
+
+      <div>
+        <%= form.label :surnames, "Apellidos", class: "block text-gray-700 font-semibold mb-2" %>
+        <%= form.text_field :surnames, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", placeholder: "Pérez García" %>
+      </div>
+
+      <div>
+        <%= form.label :birth_date, "Fecha de Nacimiento", class: "block text-gray-700 font-semibold mb-2" %>
+        <%= form.date_field :birth_date, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors" %>
+      </div>
+
+      <div class="md:col-span-2">
+        <%= form.label :home_address, "Dirección de Habitación", class: "block text-gray-700 font-semibold mb-2" %>
+        <%= form.text_area :home_address, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", rows: 3, placeholder: "Av. Principal #123, Caracas" %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Información Laboral -->
+  <div class="bg-white rounded-xl shadow-lg p-6" data-controller="date-calculator">
+    <h3 class="text-wine-primary text-xl font-bold mb-6 pb-3 border-b-2 border-gray-100">💼 Información Laboral</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div>
+        <%= form.label :hire_date, "Fecha de Ingreso", class: "block text-gray-700 font-semibold mb-2" %>
+        <%= form.date_field :hire_date, 
+                           class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors",
+                           data: { 
+                             "date-calculator-target": "hireDate",
+                             "action": "change->date-calculator#calculateVacationDate"
+                           } %>
+      </div>
+
+      <div>
+        <%= form.label :vacation_date, "Fecha de Vacaciones", class: "block text-gray-700 font-semibold mb-2" %>
+        <%= form.date_field :vacation_date, 
+                           class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors",
+                           data: { "date-calculator-target": "vacationDate" } %>
+        <p class="text-sm text-gray-500 mt-1">Se calcula automáticamente (1 año después del ingreso)</p>
+      </div>
+
+      <div>
+        <%= form.label :expired_vacations, "Vacaciones Vencidas", class: "block text-gray-700 font-semibold mb-2" %>
+        <%= form.number_field :expired_vacations, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", min: 0, placeholder: "0" %>
+      </div>
+
+      <div>
+        <%= form.label :active, "Estado", class: "block text-gray-700 font-semibold mb-2" %>
+        <%= form.select :active, options_for_select([['Activo', true], ['Inactivo', false]], @employee.active), 
+                       {}, { class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors" } %>
+      </div>
+
+      <div class="md:col-span-2 lg:col-span-4">
+        <%= form.label :skills_abilities, "Habilidades y Destrezas", class: "block text-gray-700 font-semibold mb-2" %>
+        <%= form.text_area :skills_abilities, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", rows: 3, 
+                          placeholder: "Programación, Liderazgo, Inglés avanzado..." %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tallas del Trabajador -->
+  <div class="bg-white rounded-xl shadow-lg p-6">
+    <h3 class="text-wine-primary text-xl font-bold mb-6 pb-3 border-b-2 border-gray-100">👕 Tallas del Trabajador</h3>
+    <%= form.fields_for :worker_size do |size_form| %>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <%= size_form.label :shirt_size, "Talla de Camisa", class: "block text-gray-700 font-semibold mb-2" %>
+          <%= size_form.select :shirt_size, 
+                             options_for_select([['XS', 'XS'], ['S', 'S'], ['M', 'M'], ['L', 'L'], ['XL', 'XL'], ['XXL', 'XXL']], 
+                             size_form.object.shirt_size), 
+                             { prompt: "Seleccione talla" }, 
+                             { class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors" } %>
+        </div>
+
+        <div>
+          <%= size_form.label :shoes_size, "Talla de Zapatos", class: "block text-gray-700 font-semibold mb-2" %>
+          <%= size_form.text_field :shoes_size, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", placeholder: "42" %>
+        </div>
+
+        <div>
+          <%= size_form.label :pants_size, "Talla de Pantalón", class: "block text-gray-700 font-semibold mb-2" %>
+          <%= size_form.text_field :pants_size, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", placeholder: "34" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Carnets -->
+  <div class="bg-white rounded-xl shadow-lg p-6">
+    <h3 class="text-wine-primary text-xl font-bold mb-6 pb-3 border-b-2 border-gray-100">🪪 Carnets</h3>
+    
+    <!-- Carnet del Partido -->
+    <div class="mb-8">
+      <h4 class="text-gray-800 text-lg font-semibold mb-4">Carnet del Partido</h4>
+      <%= form.fields_for :party_card do |card_form| %>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <%= card_form.label :code, "Código", class: "block text-gray-700 font-semibold mb-2" %>
+            <%= card_form.text_field :code, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", placeholder: "PSUV001" %>
+          </div>
+          <div>
+            <%= card_form.label :serial_number, "Serial", class: "block text-gray-700 font-semibold mb-2" %>
+            <%= card_form.text_field :serial_number, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", placeholder: "ABC123456" %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Carnet PSUV -->
+    <div class="border-t border-gray-200 pt-6">
+      <h4 class="text-gray-800 text-lg font-semibold mb-4">Carnet PSUV</h4>
+      <%= form.fields_for :psuv_card do |psuv_form| %>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <%= psuv_form.label :code, "Código", class: "block text-gray-700 font-semibold mb-2" %>
+            <%= psuv_form.text_field :code, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", placeholder: "PSUV2024001" %>
+          </div>
+          <div>
+            <%= psuv_form.label :serial_number, "Serial", class: "block text-gray-700 font-semibold mb-2" %>
+            <%= psuv_form.text_field :serial_number, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", placeholder: "PSV789012" %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Cuentas de Pago -->
+  <div class="bg-white rounded-xl shadow-lg p-6" data-controller="nested-forms" data-nested-forms-prefix-value="payment_accounts">
+    <h3 class="text-wine-primary text-xl font-bold mb-6 pb-3 border-b-2 border-gray-100">💳 Cuentas de Pago</h3>
+    
+    <div class="space-y-6" data-nested-forms-target="container">
+      <%= form.fields_for :payment_accounts do |account_form| %>
+        <div class="border-2 border-gray-200 rounded-lg p-6 bg-gray-50" data-nested-item>
+          <div class="flex justify-between items-center mb-4">
+            <h4 class="text-gray-800 font-semibold">Cuenta de Pago</h4>
+            <button type="button" class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors" data-action="nested-forms#remove">Eliminar</button>
+          </div>
+          
+          <%= account_form.hidden_field :_destroy, class: "destroy-field" %>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <%= account_form.label :account_type, "Tipo de Cuenta", class: "block text-gray-700 font-semibold mb-2" %>
+              <%= account_form.select :account_type, 
+                                     options_for_select([['Cuenta Bancaria', 'bank'], ['Pago Móvil', 'mobile_payment']], 
+                                     account_form.object.account_type), 
+                                     { prompt: "Seleccione tipo" }, 
+                                     { class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors account-type-select", "data-action": "nested-forms#toggleAccountType" } %>
+            </div>
+
+            <div class="bank-fields" style="display: none;">
+              <%= account_form.label :bank_name, "Banco", class: "block text-gray-700 font-semibold mb-2" %>
+              <%= account_form.text_field :bank_name, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", placeholder: "Banco de Venezuela" %>
+            </div>
+
+            <div class="bank-fields" style="display: none;">
+              <%= account_form.label :account_number, "Número de Cuenta", class: "block text-gray-700 font-semibold mb-2" %>
+              <%= account_form.text_field :account_number, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", placeholder: "01020123456789012345" %>
+            </div>
+
+            <div class="mobile-fields" style="display: none;">
+              <%= account_form.label :mobile_payment_number, "Teléfono Pago Móvil", class: "block text-gray-700 font-semibold mb-2" %>
+              <%= account_form.text_field :mobile_payment_number, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", placeholder: "04141234567" %>
+            </div>
+
+            <div class="flex items-center space-x-4">
+              <label class="flex items-center space-x-2">
+                <%= account_form.check_box :is_primary, class: "rounded border-gray-300 text-wine-primary focus:ring-wine-primary" %>
+                <span class="text-gray-700">Cuenta Principal</span>
+              </label>
+
+              <label class="flex items-center space-x-2">
+                <%= account_form.check_box :active, class: "rounded border-gray-300 text-wine-primary focus:ring-wine-primary", checked: account_form.object.active != false %>
+                <span class="text-gray-700">Activa</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+    
+    <!-- Template for new payment accounts -->
+    <template data-nested-forms-target="template">
+      <div class="border-2 border-gray-200 rounded-lg p-6 bg-gray-50" data-nested-item>
+        <div class="flex justify-between items-center mb-4">
+          <h4 class="text-gray-800 font-semibold">Cuenta de Pago</h4>
+          <button type="button" class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors" data-action="nested-forms#remove">Eliminar</button>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-gray-700 font-semibold mb-2">Tipo de Cuenta</label>
+            <select name="employee[payment_accounts_attributes][NEW_RECORD][account_type]" 
+                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors account-type-select" 
+                    data-action="nested-forms#toggleAccountType">
+              <option value="">Seleccione tipo</option>
+              <option value="bank">Cuenta Bancaria</option>
+              <option value="mobile_payment">Pago Móvil</option>
+            </select>
+          </div>
+
+          <div class="bank-fields" style="display: none;">
+            <label class="block text-gray-700 font-semibold mb-2">Banco</label>
+            <input type="text" 
+                   name="employee[payment_accounts_attributes][NEW_RECORD][bank_name]" 
+                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors" 
+                   placeholder="Banco de Venezuela">
+          </div>
+
+          <div class="bank-fields" style="display: none;">
+            <label class="block text-gray-700 font-semibold mb-2">Número de Cuenta</label>
+            <input type="text" 
+                   name="employee[payment_accounts_attributes][NEW_RECORD][account_number]" 
+                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors" 
+                   placeholder="01020123456789012345">
+          </div>
+
+          <div class="mobile-fields" style="display: none;">
+            <label class="block text-gray-700 font-semibold mb-2">Teléfono Pago Móvil</label>
+            <input type="text" 
+                   name="employee[payment_accounts_attributes][NEW_RECORD][mobile_payment_number]" 
+                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors" 
+                   placeholder="04141234567">
+          </div>
+
+          <div class="flex items-center space-x-4">
+            <label class="flex items-center space-x-2">
+              <input type="hidden" name="employee[payment_accounts_attributes][NEW_RECORD][is_primary]" value="0">
+              <input type="checkbox" 
+                     name="employee[payment_accounts_attributes][NEW_RECORD][is_primary]" 
+                     value="1" 
+                     class="rounded border-gray-300 text-wine-primary focus:ring-wine-primary">
+              <span class="text-gray-700">Cuenta Principal</span>
+            </label>
+
+            <label class="flex items-center space-x-2">
+              <input type="hidden" name="employee[payment_accounts_attributes][NEW_RECORD][active]" value="0">
+              <input type="checkbox" 
+                     name="employee[payment_accounts_attributes][NEW_RECORD][active]" 
+                     value="1" 
+                     class="rounded border-gray-300 text-wine-primary focus:ring-wine-primary" 
+                     checked>
+              <span class="text-gray-700">Activa</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </template>
+    
+    <button type="button" class="mt-6 bg-wine-primary text-white px-6 py-3 rounded-lg hover:bg-wine-secondary transition-colors font-semibold" data-action="nested-forms#add">
+      ➕ Agregar Cuenta de Pago
+    </button>
+  </div>
+
+  <!-- Carga Familiar -->
+  <div class="bg-white rounded-xl shadow-lg p-6" data-controller="nested-forms" data-nested-forms-prefix-value="family_members">
+    <h3 class="text-wine-primary text-xl font-bold mb-6 pb-3 border-b-2 border-gray-100">👨‍👩‍👧‍👦 Carga Familiar</h3>
+    
+    <div class="space-y-6" data-nested-forms-target="container">
+      <%= form.fields_for :family_members do |family_form| %>
+        <div class="border-2 border-gray-200 rounded-lg p-6 bg-gray-50" data-nested-item>
+          <div class="flex justify-between items-center mb-4">
+            <h4 class="text-gray-800 font-semibold">Familiar</h4>
+            <button type="button" class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors" data-action="nested-forms#remove">Eliminar</button>
+          </div>
+          
+          <%= family_form.hidden_field :_destroy, class: "destroy-field" %>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <%= family_form.label :names, "Nombres", class: "block text-gray-700 font-semibold mb-2" %>
+              <%= family_form.text_field :names, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", placeholder: "Ana María" %>
+            </div>
+
+            <div>
+              <%= family_form.label :birth_date, "Fecha de Nacimiento", class: "block text-gray-700 font-semibold mb-2" %>
+              <%= family_form.date_field :birth_date, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors" %>
+            </div>
+
+            <div>
+              <%= family_form.label :relationship, "Parentesco", class: "block text-gray-700 font-semibold mb-2" %>
+              <%= family_form.select :relationship, 
+                                    options_for_select([
+                                      ['Hijo', 'son'], 
+                                      ['Hija', 'daughter'], 
+                                      ['Cónyuge', 'spouse'], 
+                                      ['Padre', 'father'], 
+                                      ['Madre', 'mother'], 
+                                      ['Hermano', 'brother'], 
+                                      ['Hermana', 'sister']
+                                    ], family_form.object.relationship), 
+                                    { prompt: "Seleccione parentesco" }, 
+                                    { class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors" } %>
+            </div>
+
+            <div>
+              <%= family_form.label :education_level, "Grado de Instrucción", class: "block text-gray-700 font-semibold mb-2" %>
+              <%= family_form.select :education_level, 
+                                    options_for_select([
+                                      ['Preescolar', 'preschool'], 
+                                      ['Primaria', 'primary'], 
+                                      ['Secundaria', 'secondary'], 
+                                      ['Bachillerato', 'high_school'], 
+                                      ['Técnico', 'technical'], 
+                                      ['Universitario', 'university'], 
+                                      ['Postgrado', 'graduate']
+                                    ], family_form.object.education_level), 
+                                    { prompt: "Seleccione nivel" }, 
+                                    { class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors" } %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+    
+    <template data-nested-forms-target="template">
+      <div class="border-2 border-gray-200 rounded-lg p-6 bg-gray-50" data-nested-item>
+        <div class="flex justify-between items-center mb-4">
+          <h4 class="text-gray-800 font-semibold">Familiar</h4>
+          <button type="button" class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors" data-action="nested-forms#remove">Eliminar</button>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-gray-700 font-semibold mb-2">Nombres</label>
+            <input type="text" 
+                   name="employee[family_members_attributes][NEW_RECORD][names]" 
+                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors" 
+                   placeholder="Ana María">
+          </div>
+
+          <div>
+            <label class="block text-gray-700 font-semibold mb-2">Fecha de Nacimiento</label>
+            <input type="date" 
+                   name="employee[family_members_attributes][NEW_RECORD][birth_date]" 
+                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors">
+          </div>
+
+          <div>
+            <label class="block text-gray-700 font-semibold mb-2">Parentesco</label>
+            <select name="employee[family_members_attributes][NEW_RECORD][relationship]" 
+                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors">
+              <option value="">Seleccione parentesco</option>
+              <option value="son">Hijo</option>
+              <option value="daughter">Hija</option>
+              <option value="spouse">Cónyuge</option>
+              <option value="father">Padre</option>
+              <option value="mother">Madre</option>
+              <option value="brother">Hermano</option>
+              <option value="sister">Hermana</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-gray-700 font-semibold mb-2">Nivel de Instrucción</label>
+            <select name="employee[family_members_attributes][NEW_RECORD][education_level]" 
+                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors">
+              <option value="">Seleccione nivel</option>
+              <option value="preschool">Preescolar</option>
+              <option value="primary">Primaria</option>
+              <option value="secondary">Secundaria</option>
+              <option value="high_school">Bachillerato</option>
+              <option value="technical">Técnico</option>
+              <option value="university">Universitario</option>
+              <option value="graduate">Postgrado</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </template>
+    
+    <button type="button" class="mt-6 bg-wine-primary text-white px-6 py-3 rounded-lg hover:bg-wine-secondary transition-colors font-semibold" data-action="nested-forms#add">
+      ➕ Agregar Familiar
+    </button>
+  </div>
+
+  <!-- Form Actions -->
+  <div class="flex flex-col sm:flex-row gap-4 justify-end pt-8 border-t-2 border-gray-100">
+    <%= form.submit (@employee.new_record? ? "Crear Empleado" : "Actualizar Empleado"), 
+                   class: "bg-wine-primary text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-wine-secondary transition-colors" %>
+    <%= link_to "Cancelar", admin_employees_path, 
+               class: "bg-gray-300 text-gray-700 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-400 transition-colors text-center" %>
+  </div>
+<% end %>

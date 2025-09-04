@@ -1,0 +1,23 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  identification_number: MyString
+  names: MyString
+  surnames: MyString
+  birth_date: 2025-09-03
+  hire_date: 2025-09-03
+  home_address: MyText
+  vacation_date: 2025-09-03
+  expired_vacations: 1
+  skills_abilities: MyText
+
+two:
+  identification_number: MyString
+  names: MyString
+  surnames: MyString
+  birth_date: 2025-09-03
+  hire_date: 2025-09-03
+  home_address: MyText
+  vacation_date: 2025-09-03
+  expired_vacations: 1
+  skills_abilities: MyText

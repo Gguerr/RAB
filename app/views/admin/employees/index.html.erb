@@ -1,0 +1,325 @@
+<% content_for :page_title, "Empleados" %>
+<% content_for :header_actions do %>
+  <%= link_to "Nuevo Empleado", new_admin_employee_path, class: "btn btn-primary" %>
+<% end %>
+
+<div class="employees-index">
+  <!-- Search Form -->
+  <div class="search-section">
+    <%= form_with url: admin_employees_path, method: :get, class: "search-form", local: true do |form| %>
+      <div class="search-input-group">
+        <%= form.text_field :search, placeholder: "Buscar por nombre, apellido o cédula...", 
+                           value: params[:search], class: "search-input" %>
+        <%= form.submit "Buscar", class: "btn btn-secondary" %>
+        <% if params[:search].present? %>
+          <%= link_to "Limpiar", admin_employees_path, class: "btn btn-outline" %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Results Summary -->
+  <div class="results-summary">
+    <p><strong><%= @employees.count %></strong> empleado<%= 's' if @employees.count != 1 %> encontrado<%= 's' if @employees.count != 1 %></p>
+  </div>
+
+  <!-- Employees Table -->
+  <div class="table-container">
+    <table class="employees-table">
+      <thead>
+        <tr>
+          <th>Cédula</th>
+          <th>Nombre Completo</th>
+          <th>Fecha Ingreso</th>
+          <th>Cuentas</th>
+          <th>Familiares</th>
+          <th>Estado</th>
+          <th class="actions-column">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @employees.each do |employee| %>
+          <tr>
+            <td class="id-number"><%= employee.identification_number %></td>
+            <td class="employee-name">
+              <div class="name-info">
+                <strong><%= employee.full_name %></strong>
+                <small>Edad: <%= employee.age %> años</small>
+              </div>
+            </td>
+            <td><%= employee.hire_date.strftime("%d/%m/%Y") %></td>
+            <td class="text-center">
+              <span class="badge badge-info"><%= employee.payment_accounts.count %></span>
+            </td>
+            <td class="text-center">
+              <span class="badge badge-secondary"><%= employee.family_members.count %></span>
+            </td>
+            <td>
+              <span class="status-badge status-<%= employee.active? ? 'active' : 'inactive' %>">
+                <%= employee.active? ? 'Activo' : 'Inactivo' %>
+              </span>
+            </td>
+            <td class="actions-column">
+              <div class="action-buttons">
+                <%= link_to "Ver", admin_employee_path(employee), class: "btn btn-sm btn-outline" %>
+                <%= link_to "Editar", edit_admin_employee_path(employee), class: "btn btn-sm btn-secondary" %>
+                <%= link_to "Eliminar", admin_employee_path(employee), 
+                           method: :delete,
+                           data: { 
+                             confirm: "¿Está seguro de eliminar a #{employee.full_name}?",
+                             "turbo-method": :delete 
+                           },
+                           class: "btn btn-sm btn-danger" %>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+
+    <% if @employees.empty? %>
+      <div class="empty-state">
+        <div class="empty-icon">👥</div>
+        <h3>No hay empleados</h3>
+        <p>
+          <% if params[:search].present? %>
+            No se encontraron empleados que coincidan con "<%= params[:search] %>"
+          <% else %>
+            Aún no has agregado ningún empleado al sistema.
+          <% end %>
+        </p>
+        <%= link_to "Agregar Primer Empleado", new_admin_employee_path, class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<style>
+  .employees-index {
+    max-width: 1200px;
+  }
+
+  .search-section {
+    background: var(--white);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(74, 74, 74, 0.1);
+    margin-bottom: 1.5rem;
+  }
+
+  .search-form {
+    margin: 0;
+  }
+
+  .search-input-group {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .search-input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--lead-gray-lighter);
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+  }
+
+  .search-input:focus {
+    outline: none;
+    border-color: var(--wine-primary);
+  }
+
+  .results-summary {
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
+  }
+
+  .table-container {
+    background: var(--white);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(74, 74, 74, 0.1);
+    overflow: hidden;
+  }
+
+  .employees-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .employees-table th {
+    background: var(--background-primary);
+    color: var(--text-primary);
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid var(--lead-gray-lighter);
+  }
+
+  .employees-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--lead-gray-lighter);
+    vertical-align: middle;
+  }
+
+  .employees-table tr:hover {
+    background: var(--background-primary);
+  }
+
+  .id-number {
+    font-family: monospace;
+    font-weight: 600;
+    color: var(--wine-primary);
+  }
+
+  .name-info strong {
+    display: block;
+    color: var(--text-primary);
+    font-size: 1rem;
+  }
+
+  .name-info small {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+  }
+
+  .text-center {
+    text-align: center;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .badge-info {
+    background: #e3f2fd;
+    color: #1976d2;
+  }
+
+  .badge-secondary {
+    background: #f3e5f5;
+    color: #7b1fa2;
+  }
+
+  .status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .status-active {
+    background: #d4edda;
+    color: #155724;
+  }
+
+  .status-inactive {
+    background: #f8d7da;
+    color: #721c24;
+  }
+
+  .actions-column {
+    width: 200px;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  .btn-primary {
+    background: var(--wine-primary);
+    color: var(--white);
+  }
+
+  .btn-primary:hover {
+    background: var(--wine-secondary);
+  }
+
+  .btn-secondary {
+    background: var(--lead-gray);
+    color: var(--white);
+  }
+
+  .btn-secondary:hover {
+    background: var(--lead-gray-light);
+  }
+
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--lead-gray-lighter);
+    color: var(--text-primary);
+  }
+
+  .btn-outline:hover {
+    background: var(--background-primary);
+  }
+
+  .btn-danger {
+    background: #dc3545;
+    color: var(--white);
+  }
+
+  .btn-danger:hover {
+    background: #c82333;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--text-secondary);
+  }
+
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+  }
+
+  .empty-state h3 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+  }
+
+  .empty-state p {
+    margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 768px) {
+    .search-input-group {
+      flex-direction: column;
+    }
+
+    .employees-table {
+      font-size: 0.9rem;
+    }
+
+    .action-buttons {
+      flex-direction: column;
+    }
+  }
+</style>
+
+

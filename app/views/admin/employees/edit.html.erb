@@ -1,0 +1,11 @@
+<% content_for :page_title, "Editar Empleado: #{@employee.full_name}" %>
+<% content_for :header_actions do %>
+  <%= link_to "Ver", admin_employee_path(@employee), class: "btn btn-secondary" %>
+  <%= link_to "Volver", admin_employees_path, class: "btn btn-outline" %>
+<% end %>
+
+<div class="edit-employee">
+  <%= render 'form' %>
+</div>
+
+

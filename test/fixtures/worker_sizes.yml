@@ -1,0 +1,13 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  employee: one
+  shirt_size: MyString
+  shoes_size: MyString
+  pants_size: MyString
+
+two:
+  employee: two
+  shirt_size: MyString
+  shoes_size: MyString
+  pants_size: MyString

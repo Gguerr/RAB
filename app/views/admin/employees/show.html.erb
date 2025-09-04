@@ -1,0 +1,474 @@
+<% content_for :page_title, @employee.full_name %>
+<% content_for :header_actions do %>
+  <%= link_to "Editar", edit_admin_employee_path(@employee), class: "btn btn-primary" %>
+  <%= link_to "Eliminar", admin_employee_path(@employee), 
+             method: :delete,
+             data: { 
+               confirm: "¿Está seguro de eliminar a #{@employee.full_name}?",
+               "turbo-method": :delete 
+             },
+             class: "btn btn-danger" %>
+  <%= link_to "Volver", admin_employees_path, class: "btn btn-outline" %>
+<% end %>
+
+<div class="employee-details">
+  <!-- Información Personal -->
+  <div class="detail-section">
+    <h3 class="section-title">📋 Información Personal</h3>
+    <div class="detail-grid">
+      <div class="detail-item">
+        <label>Cédula de Identidad</label>
+        <span class="detail-value id-number"><%= @employee.identification_number %></span>
+      </div>
+      
+      <div class="detail-item">
+        <label>Nombre Completo</label>
+        <span class="detail-value"><%= @employee.full_name %></span>
+      </div>
+      
+      <div class="detail-item">
+        <label>Fecha de Nacimiento</label>
+        <span class="detail-value"><%= @employee.birth_date.strftime("%d/%m/%Y") %></span>
+      </div>
+      
+      <div class="detail-item">
+        <label>Edad</label>
+        <span class="detail-value"><%= @employee.age %> años</span>
+      </div>
+      
+      <div class="detail-item full-width">
+        <label>Dirección de Habitación</label>
+        <span class="detail-value"><%= @employee.home_address %></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Información Laboral -->
+  <div class="detail-section">
+    <h3 class="section-title">💼 Información Laboral</h3>
+    <div class="detail-grid">
+      <div class="detail-item">
+        <label>Fecha de Ingreso</label>
+        <span class="detail-value"><%= @employee.hire_date.strftime("%d/%m/%Y") %></span>
+      </div>
+      
+      <div class="detail-item">
+        <label>Fecha de Vacaciones</label>
+        <span class="detail-value">
+          <%= @employee.vacation_date ? @employee.vacation_date.strftime("%d/%m/%Y") : "No asignada" %>
+        </span>
+      </div>
+      
+      <div class="detail-item">
+        <label>Vacaciones Vencidas</label>
+        <span class="detail-value"><%= @employee.expired_vacations %> días</span>
+      </div>
+      
+      <div class="detail-item">
+        <label>Estado</label>
+        <span class="status-badge status-<%= @employee.active? ? 'active' : 'inactive' %>">
+          <%= @employee.active? ? 'Activo' : 'Inactivo' %>
+        </span>
+      </div>
+      
+      <div class="detail-item full-width">
+        <label>Habilidades y Destrezas</label>
+        <span class="detail-value"><%= @employee.skills_abilities || "No especificadas" %></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tallas del Trabajador -->
+  <div class="detail-section">
+    <h3 class="section-title">👕 Tallas del Trabajador</h3>
+    <% if @worker_size %>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <label>Talla de Camisa</label>
+          <span class="detail-value"><%= @worker_size.shirt_size || "No especificada" %></span>
+        </div>
+        
+        <div class="detail-item">
+          <label>Talla de Zapatos</label>
+          <span class="detail-value"><%= @worker_size.shoes_size || "No especificada" %></span>
+        </div>
+        
+        <div class="detail-item">
+          <label>Talla de Pantalón</label>
+          <span class="detail-value"><%= @worker_size.pants_size || "No especificada" %></span>
+        </div>
+      </div>
+    <% else %>
+      <p class="no-data">No se han registrado las tallas de este empleado.</p>
+    <% end %>
+  </div>
+
+  <!-- Carnets -->
+  <div class="detail-section">
+    <h3 class="section-title">🪪 Carnets</h3>
+    
+    <!-- Carnet del Partido -->
+    <div class="subsection">
+      <h4 class="subsection-title">Carnet del Partido</h4>
+      <% if @party_card %>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <label>Código</label>
+            <span class="detail-value"><%= @party_card.code %></span>
+          </div>
+          <div class="detail-item">
+            <label>Serial</label>
+            <span class="detail-value"><%= @party_card.serial_number %></span>
+          </div>
+        </div>
+      <% else %>
+        <p class="no-data">No se ha registrado carnet del partido.</p>
+      <% end %>
+    </div>
+
+    <!-- Carnet PSUV -->
+    <div class="subsection">
+      <h4 class="subsection-title">Carnet PSUV</h4>
+      <% if @psuv_card %>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <label>Código</label>
+            <span class="detail-value"><%= @psuv_card.code %></span>
+          </div>
+          <div class="detail-item">
+            <label>Serial</label>
+            <span class="detail-value"><%= @psuv_card.serial_number %></span>
+          </div>
+        </div>
+      <% else %>
+        <p class="no-data">No se ha registrado carnet PSUV.</p>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Cuentas de Pago -->
+  <div class="detail-section">
+    <h3 class="section-title">💳 Cuentas de Pago</h3>
+    <% if @payment_accounts.any? %>
+      <div class="accounts-list">
+        <% @payment_accounts.each do |account| %>
+          <div class="account-card">
+            <div class="account-header">
+              <span class="account-type">
+                <%= account.account_type == 'bank' ? '🏦 Cuenta Bancaria' : '📱 Pago Móvil' %>
+              </span>
+              <div class="account-badges">
+                <% if account.is_primary? %>
+                  <span class="badge badge-primary">Principal</span>
+                <% end %>
+                <span class="badge badge-<%= account.active? ? 'success' : 'danger' %>">
+                  <%= account.active? ? 'Activa' : 'Inactiva' %>
+                </span>
+              </div>
+            </div>
+            
+            <div class="account-details">
+              <% if account.account_type == 'bank' %>
+                <div class="account-info">
+                  <strong>Banco:</strong> <%= account.bank_name %>
+                </div>
+                <div class="account-info">
+                  <strong>Número de Cuenta:</strong> 
+                  <span class="account-number"><%= account.account_number %></span>
+                </div>
+              <% else %>
+                <div class="account-info">
+                  <strong>Teléfono:</strong> 
+                  <span class="phone-number"><%= account.mobile_payment_number %></span>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="no-data">No se han registrado cuentas de pago para este empleado.</p>
+    <% end %>
+  </div>
+
+  <!-- Carga Familiar -->
+  <div class="detail-section">
+    <h3 class="section-title">👨‍👩‍👧‍👦 Carga Familiar</h3>
+    <% if @family_members.any? %>
+      <div class="family-list">
+        <% @family_members.each do |member| %>
+          <div class="family-card">
+            <div class="family-header">
+              <h4 class="family-name"><%= member.names %></h4>
+              <span class="relationship-badge">
+                <%= case member.relationship
+                    when 'son' then '👦 Hijo'
+                    when 'daughter' then '👧 Hija'
+                    when 'spouse' then '💑 Cónyuge'
+                    when 'father' then '👨 Padre'
+                    when 'mother' then '👩 Madre'
+                    when 'brother' then '👨‍🦱 Hermano'
+                    when 'sister' then '👩‍🦱 Hermana'
+                    else member.relationship.humanize
+                    end %>
+              </span>
+            </div>
+            
+            <div class="family-details">
+              <div class="family-info">
+                <strong>Fecha de Nacimiento:</strong> 
+                <%= member.birth_date.strftime("%d/%m/%Y") %>
+                (<%= ((Date.current - member.birth_date) / 365.25).to_i %> años)
+              </div>
+              <div class="family-info">
+                <strong>Grado de Instrucción:</strong> 
+                <%= case member.education_level
+                    when 'preschool' then 'Preescolar'
+                    when 'primary' then 'Primaria'
+                    when 'secondary' then 'Secundaria'
+                    when 'high_school' then 'Bachillerato'
+                    when 'technical' then 'Técnico'
+                    when 'university' then 'Universitario'
+                    when 'graduate' then 'Postgrado'
+                    else member.education_level.humanize
+                    end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="no-data">No se ha registrado carga familiar para este empleado.</p>
+    <% end %>
+  </div>
+</div>
+
+<style>
+  .employee-details {
+    max-width: 1000px;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .detail-section {
+    background: var(--white);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(74, 74, 74, 0.1);
+  }
+
+  .section-title {
+    color: var(--wine-primary);
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0 0 1.5rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--background-primary);
+  }
+
+  .subsection {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--lead-gray-lighter);
+  }
+
+  .subsection-title {
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 1rem 0;
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .detail-item {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .detail-item.full-width {
+    grid-column: 1 / -1;
+  }
+
+  .detail-item label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .detail-value {
+    color: var(--text-primary);
+    font-size: 1rem;
+    padding: 0.5rem 0;
+  }
+
+  .id-number {
+    font-family: monospace;
+    font-weight: 600;
+    color: var(--wine-primary);
+    font-size: 1.1rem;
+  }
+
+  .status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-block;
+  }
+
+  .status-active {
+    background: #d4edda;
+    color: #155724;
+  }
+
+  .status-inactive {
+    background: #f8d7da;
+    color: #721c24;
+  }
+
+  .no-data {
+    color: var(--text-secondary);
+    font-style: italic;
+    text-align: center;
+    padding: 1rem;
+    background: var(--background-primary);
+    border-radius: 8px;
+  }
+
+  /* Accounts */
+  .accounts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .account-card {
+    border: 2px solid var(--background-primary);
+    border-radius: 8px;
+    padding: 1.5rem;
+    background: var(--background-primary);
+  }
+
+  .account-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .account-type {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .account-badges {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .badge-primary {
+    background: var(--wine-primary);
+    color: var(--white);
+  }
+
+  .badge-success {
+    background: #d4edda;
+    color: #155724;
+  }
+
+  .badge-danger {
+    background: #f8d7da;
+    color: #721c24;
+  }
+
+  .account-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .account-info {
+    color: var(--text-secondary);
+  }
+
+  .account-number, .phone-number {
+    font-family: monospace;
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  /* Family */
+  .family-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .family-card {
+    border: 2px solid var(--background-primary);
+    border-radius: 8px;
+    padding: 1.5rem;
+    background: var(--background-primary);
+  }
+
+  .family-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .family-name {
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .relationship-badge {
+    background: var(--wine-primary);
+    color: var(--white);
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .family-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .family-info {
+    color: var(--text-secondary);
+  }
+
+  @media (max-width: 768px) {
+    .detail-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .account-header, .family-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+  }
+</style>
+
+

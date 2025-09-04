@@ -1,0 +1,40 @@
+/*
+ * This is a manifest file that'll be compiled into application.css.
+ *
+ * With Propshaft, assets are served efficiently without preprocessing steps. You can still include
+ * application-wide styles in this file, but keep in mind that CSS precedence will follow the standard
+ * cascading order, meaning styles declared later in the document or manifest will override earlier ones,
+ * depending on specificity.
+ *
+ * Consider organizing styles into separate files for maintainability.
+ */
+
+/* Color scheme variables - Wine and Lead Gray */
+:root {
+  --wine-primary: #722F37;     /* Wine primary */
+  --wine-secondary: #8B3A3A;   /* Lighter wine */
+  --wine-dark: #5D2428;        /* Darker wine */
+  --wine-light: #A64B4B;       /* Light wine accent */
+  
+  --lead-gray: #4A4A4A;        /* Lead gray primary */
+  --lead-gray-light: #6B6B6B;  /* Lighter lead gray */
+  --lead-gray-dark: #2F2F2F;   /* Darker lead gray */
+  --lead-gray-lighter: #8A8A8A; /* Very light lead gray */
+  
+  --background-primary: #F5F3F4;  /* Very light background */
+  --background-secondary: #E8E5E6; /* Secondary background */
+  --white: #FFFFFF;
+  --text-primary: var(--lead-gray-dark);
+  --text-secondary: var(--lead-gray);
+  --text-light: var(--lead-gray-lighter);
+}
+
+/* Global body styles */
+body {
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(135deg, var(--background-primary) 0%, var(--background-secondary) 100%);
+  color: var(--text-primary);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+}

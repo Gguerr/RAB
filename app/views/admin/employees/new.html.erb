@@ -1,0 +1,10 @@
+<% content_for :page_title, "Nuevo Empleado" %>
+<% content_for :header_actions do %>
+  <%= link_to "Volver", admin_employees_path, class: "btn btn-outline" %>
+<% end %>
+
+<div class="new-employee">
+  <%= render 'form' %>
+</div>
+
+
