@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  devise_for :users
   devise_for :admins, path: 'admin', path_names: {
     sign_in: 'login',
     sign_out: 'logout',
@@ -7,9 +8,29 @@ Rails.application.routes.draw do
   
   # Rutas administrativas
   namespace :admin do
-    get "dashboard/index"
+    resources :reports, only: [:index, :new] do
+      collection do
+        post :generate_direct  # Para generación directa de PDF
+        post :generate
+        get :employee_report
+        get :payment_accounts_report
+        get :family_report
+        get :sizes_report
+        get :cards_report
+        get :vacation_request_report
+      end
+    end
     root 'dashboard#index'
     get 'dashboard', to: 'dashboard#index'
+    
+    resources :roles do
+      member do
+        patch :activate
+        patch :deactivate
+        get :manage_permissions
+        patch :update_permissions
+      end
+    end
     
     resources :employees do
       member do
@@ -17,6 +38,16 @@ Rails.application.routes.draw do
         get :manage_sizes
         get :manage_cards
         get :manage_family
+      end
+    end
+    
+    resources :vacations, only: [:index, :show, :edit, :update] do
+      member do
+        get :generate_pdf
+      end
+      collection do
+        patch :bulk_update
+        get :calendar
       end
     end
   end

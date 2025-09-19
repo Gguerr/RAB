@@ -1,0 +1,337 @@
+<% content_for :page_title, "Detalles del Rol" %>
+
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <div class="flex-shrink-0 h-16 w-16">
+          <div class="h-16 w-16 rounded-full bg-wine-primary flex items-center justify-center">
+            <span class="text-white font-bold text-xl">🔐</span>
+          </div>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900"><%= @role.name.humanize %></h1>
+          <% if @role.description.present? %>
+            <p class="text-gray-600"><%= @role.description %></p>
+          <% end %>
+          <div class="flex items-center mt-2">
+            <% if @role.active? %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                ✅ Activo
+              </span>
+            <% else %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                🚫 Inactivo
+              </span>
+            <% end %>
+          </div>
+        </div>
+      </div>
+      
+      <div class="flex space-x-3">
+        <%= link_to edit_admin_role_path(@role), 
+            class: "inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors" do %>
+          ✏️ Editar
+        <% end %>
+        
+        <%= link_to manage_permissions_admin_role_path(@role), 
+            class: "inline-flex items-center px-4 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors" do %>
+          🛡️ Gestionar Permisos
+        <% end %>
+        
+        <%= link_to admin_roles_path, 
+            class: "inline-flex items-center px-4 py-2 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 transition-colors" do %>
+          ← Volver
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Role Information -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Basic Info -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">📝 Información del Rol</h3>
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Nombre</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= @role.name.humanize %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Estado</dt>
+            <dd class="mt-1">
+              <% if @role.active? %>
+                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                  Activo
+                </span>
+              <% else %>
+                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
+                  Inactivo
+                </span>
+              <% end %>
+            </dd>
+          </div>
+          <div class="sm:col-span-2">
+            <dt class="text-sm font-medium text-gray-500">Descripción</dt>
+            <dd class="mt-1 text-sm text-gray-900">
+              <%= @role.description.present? ? @role.description : "Sin descripción" %>
+            </dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Creado</dt>
+            <dd class="mt-1 text-sm text-gray-900">
+              <%= l(@role.created_at, format: :long) %>
+              <br><span class="text-gray-500">(<%= time_ago_in_words(@role.created_at) %> atrás)</span>
+            </dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Última modificación</dt>
+            <dd class="mt-1 text-sm text-gray-900">
+              <%= l(@role.updated_at, format: :long) %>
+              <br><span class="text-gray-500">(<%= time_ago_in_words(@role.updated_at) %> atrás)</span>
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <!-- Permissions -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-gray-900">🛡️ Permisos del Rol</h3>
+          <%= link_to manage_permissions_admin_role_path(@role), 
+              class: "text-wine-primary hover:text-wine-secondary font-medium text-sm" do %>
+            Gestionar Permisos →
+          <% end %>
+        </div>
+        
+        <% if @role_permissions.any? %>
+          <div class="space-y-4">
+            <% @role_permissions.group_by(&:resource).each do |resource, permissions| %>
+              <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="font-medium text-gray-900 flex items-center">
+                    <span class="mr-2">
+                      <% case resource %>
+                      <% when 'users' %>
+                        👥
+                      <% when 'roles' %>
+                        🔐
+                      <% when 'permissions' %>
+                        🛡️
+                      <% when 'employees' %>
+                        👨‍💼
+                      <% when 'dashboard' %>
+                        📊
+                      <% when 'reports' %>
+                        📈
+                      <% else %>
+                        📄
+                      <% end %>
+                    </span>
+                    <% 
+                      resource_spanish = case resource
+                      when 'users'
+                        'Usuarios'
+                      when 'roles'
+                        'Roles'
+                      when 'permissions'
+                        'Permisos'
+                      when 'employees'
+                        'Empleados'
+                      when 'dashboard'
+                        'Panel'
+                      when 'reports'
+                        'Reportes'
+                      else
+                        resource.humanize
+                      end
+                    %>
+                    <%= resource_spanish %>
+                  </h4>
+                  <span class="text-sm text-gray-500"><%= permissions.count %> permisos</span>
+                </div>
+                
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  <% permissions.each do |permission| %>
+                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                      <%= permission.action_in_spanish %>
+                    </span>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="text-center py-8">
+            <div class="text-gray-400 text-4xl mb-2">🛡️</div>
+            <p class="text-gray-500">Este rol no tiene permisos asignados.</p>
+            <%= link_to manage_permissions_admin_role_path(@role), 
+                class: "inline-flex items-center mt-3 px-4 py-2 bg-wine-primary text-white font-medium rounded-lg hover:bg-wine-secondary transition-colors" do %>
+              Asignar Permisos
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Users with this Role -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">👥 Usuarios con este Rol</h3>
+        
+        <% if @role_users.any? %>
+          <div class="space-y-3">
+            <% @role_users.each do |user| %>
+              <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <div class="flex items-center space-x-3">
+                  <div class="flex-shrink-0 h-10 w-10">
+                    <div class="h-10 w-10 rounded-full bg-wine-primary flex items-center justify-center">
+                      <span class="text-white font-semibold text-sm">
+                        <%= user.first_name[0]&.upcase %><%= user.last_name[0]&.upcase %>
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="text-sm font-medium text-gray-900"><%= user.full_name %></div>
+                    <div class="text-sm text-gray-500"><%= user.email %></div>
+                  </div>
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                  <% if user.active? %>
+                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                      Activo
+                    </span>
+                  <% else %>
+                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
+                      Inactivo
+                    </span>
+                  <% end %>
+                  
+                  <%= link_to admin_user_path(user), 
+                      class: "text-wine-primary hover:text-wine-secondary" do %>
+                    👁️
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="text-center py-8">
+            <div class="text-gray-400 text-4xl mb-2">👥</div>
+            <p class="text-gray-500">No hay usuarios con este rol asignado.</p>
+            <%= link_to admin_users_path, 
+                class: "inline-flex items-center mt-3 px-4 py-2 bg-wine-primary text-white font-medium rounded-lg hover:bg-wine-secondary transition-colors" do %>
+              Ver Usuarios
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+      <!-- Quick Actions -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">⚡ Acciones Rápidas</h3>
+        <div class="space-y-3">
+          <% if @role.active? %>
+            <%= link_to deactivate_admin_role_path(@role), 
+                method: :patch,
+                data: { confirm: "¿Estás seguro de desactivar este rol?" },
+                class: "flex items-center w-full px-4 py-2 text-left text-yellow-700 hover:bg-yellow-50 rounded-lg transition-colors" do %>
+              🚫 Desactivar Rol
+            <% end %>
+          <% else %>
+            <%= link_to activate_admin_role_path(@role), 
+                method: :patch,
+                class: "flex items-center w-full px-4 py-2 text-left text-green-700 hover:bg-green-50 rounded-lg transition-colors" do %>
+              ✅ Activar Rol
+            <% end %>
+          <% end %>
+          
+          <%= link_to edit_admin_role_path(@role), 
+              class: "flex items-center w-full px-4 py-2 text-left text-blue-700 hover:bg-blue-50 rounded-lg transition-colors" do %>
+            ✏️ Editar Información
+          <% end %>
+          
+          <%= link_to manage_permissions_admin_role_path(@role), 
+              class: "flex items-center w-full px-4 py-2 text-left text-purple-700 hover:bg-purple-50 rounded-lg transition-colors" do %>
+            🛡️ Gestionar Permisos
+          <% end %>
+          
+          <hr class="my-3">
+          
+          <% if @role.users.empty? %>
+            <%= link_to admin_role_path(@role), 
+                method: :delete,
+                data: { confirm: "¿Estás seguro de eliminar este rol? Esta acción no se puede deshacer." },
+                class: "flex items-center w-full px-4 py-2 text-left text-red-700 hover:bg-red-50 rounded-lg transition-colors" do %>
+              🗑️ Eliminar Rol
+            <% end %>
+          <% else %>
+            <div class="flex items-center w-full px-4 py-2 text-gray-400 cursor-not-allowed rounded-lg">
+              🗑️ No se puede eliminar (tiene usuarios)
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Statistics -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">📊 Estadísticas</h3>
+        <div class="space-y-4">
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">Usuarios asignados</span>
+            <span class="text-lg font-semibold text-gray-900"><%= @role.users.count %></span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">Permisos totales</span>
+            <span class="text-lg font-semibold text-gray-900"><%= @role.permissions.count %></span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">Usuarios activos</span>
+            <span class="text-lg font-semibold text-gray-900"><%= @role.users.active.count %></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Permission Summary -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">🔍 Resumen de Permisos</h3>
+        <% if @role_permissions.any? %>
+          <div class="space-y-2">
+            <% @role_permissions.group_by(&:resource).each do |resource, permissions| %>
+              <div class="flex justify-between items-center text-sm">
+                <span class="text-gray-600">
+                  <% 
+                    resource_spanish = case resource
+                    when 'users'
+                      'Usuarios'
+                    when 'roles'
+                      'Roles'
+                    when 'permissions'
+                      'Permisos'
+                    when 'employees'
+                      'Empleados'
+                    when 'dashboard'
+                      'Panel'
+                    when 'reports'
+                      'Reportes'
+                    else
+                      resource.humanize
+                    end
+                  %>
+                  <%= resource_spanish %>
+                </span>
+                <span class="font-medium text-gray-900"><%= permissions.count %></span>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="text-sm text-gray-500 italic">Sin permisos asignados</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,4 +1,4 @@
-source "https://rubygems.org"
+  source "https://rubygems.org"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "rails", "~> 8.0.2", ">= 8.0.2.1"
@@ -20,8 +20,20 @@ gem "jbuilder"
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # gem "bcrypt", "~> 3.1.7"
 
+
 # Authentication solution for Rails [https://github.com/heartcombo/devise]
 gem "devise"
+
+# Excel file processing [https://github.com/roo-rb/roo]
+gem "roo", "~> 2.9"
+gem "roo-xls"
+
+# Authorization solution for Rails [https://github.com/varvet/pundit]
+gem "pundit"
+
+# PDF generation [https://github.com/prawnpdf/prawn]
+gem "prawn"
+gem "prawn-table"
 
 # Tailwind CSS for Rails [https://github.com/rails/tailwindcss-rails]
 gem "tailwindcss-rails"

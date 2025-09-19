@@ -10,9 +10,8 @@
 
     <%= yield :head %>
 
-    <link rel="icon" href="/icon.png" type="image/png">
-    <link rel="icon" href="/icon.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="/icon.png">
+    <%= favicon_link_tag asset_path("logo_Rab.png"), type: "image/png" %>
+    <link rel="apple-touch-icon" href="<%= asset_path("logo_Rab.png") %>">
 
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
@@ -42,6 +41,42 @@
             <%= link_to admin_employees_path, class: "flex items-center px-6 py-3 text-gray-700 hover:bg-gray-50 hover:text-wine-primary transition-colors duration-200 #{'bg-gray-50 text-wine-primary border-r-4 border-wine-primary font-semibold' if controller_name == 'employees'}" do %>
               <span class="text-xl mr-3">👥</span>
               <span>Empleados</span>
+            <% end %>
+            
+            <%= link_to admin_vacations_path, class: "flex items-center px-6 py-3 text-gray-700 hover:bg-gray-50 hover:text-wine-primary transition-colors duration-200 #{'bg-gray-50 text-wine-primary border-r-4 border-wine-primary font-semibold' if controller_name == 'vacations'}" do %>
+              <span class="text-xl mr-3">🏖️</span>
+              <span>Gestión de Vacaciones</span>
+            <% end %>
+          </div>
+
+          <!-- Reports Section -->
+          <div class="mt-6">
+            <h3 class="px-6 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Reportes</h3>
+            
+          
+            <%= link_to "/admin/reports/new?type=vacation_request", class: "flex items-center px-6 py-3 text-gray-700 hover:bg-gray-50 hover:text-wine-primary transition-colors duration-200" do %>
+              <span class="text-xl mr-3">📋</span>
+              <span>Solicitar Vacaciones</span>
+            <% end %>
+            
+            <%= link_to admin_reports_path, class: "flex items-center px-6 py-3 text-gray-700 hover:bg-gray-50 hover:text-wine-primary transition-colors duration-200 #{'bg-gray-50 text-wine-primary border-r-4 border-wine-primary font-semibold' if controller_name == 'reports'}" do %>
+              <span class="text-xl mr-3">📊</span>
+              <span>Todos los Reportes</span>
+            <% end %>
+          </div>
+
+          <!-- System Administration Section -->
+          <div class="mt-6">
+            <h3 class="px-6 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Administración</h3>
+            
+            <%= link_to admin_employees_path, class: "flex items-center px-6 py-3 text-gray-700 hover:bg-gray-50 hover:text-wine-primary transition-colors duration-200 #{'bg-gray-50 text-wine-primary border-r-4 border-wine-primary font-semibold' if controller_name == 'employees'}" do %>
+              <span class="text-xl mr-3">👥</span>
+              <span>Empleados</span>
+            <% end %>
+            
+            <%= link_to admin_roles_path, class: "flex items-center px-6 py-3 text-gray-700 hover:bg-gray-50 hover:text-wine-primary transition-colors duration-200 #{'bg-gray-50 text-wine-primary border-r-4 border-wine-primary font-semibold' if controller_name == 'roles'}" do %>
+              <span class="text-xl mr-3">🔐</span>
+              <span>Roles y Permisos</span>
             <% end %>
           </div>
         </nav>

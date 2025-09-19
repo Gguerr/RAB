@@ -1,0 +1,397 @@
+<% content_for :page_title, "Editar Vacaciones - #{@employee.names} #{@employee.surnames}" %>
+
+<div class="vacation-edit">
+  <div class="edit-header">
+    <div class="employee-info">
+      <%= image_tag "logo_Rab.png", alt: "RAB Logo", class: "employee-avatar" %>
+      <div class="employee-details">
+        <h1><%= @employee.names %> <%= @employee.surnames %></h1>
+        <p class="employee-meta">
+          <span>CI: <%= @employee.identification_number %></span>
+          <span>•</span>
+          <span>Ingreso: <%= @employee.hire_date&.strftime('%d/%m/%Y') || 'N/A' %></span>
+        </p>
+      </div>
+    </div>
+    
+    <div class="header-actions">
+      <%= link_to admin_vacations_path, class: "btn btn-secondary" do %>
+        ← Volver a Gestión
+      <% end %>
+    </div>
+  </div>
+
+  <div class="edit-content">
+    <div class="edit-form">
+      <h2>📅 Configurar Vacaciones</h2>
+      
+      <%= form_with model: @employee, url: admin_vacation_path(@employee), method: :patch, local: true, class: "vacation-form" do |form| %>
+        <div class="form-group">
+          <%= form.label :vacation_date, "Fecha de Vacaciones", class: "form-label" %>
+          <%= form.date_field :vacation_date, 
+              class: "form-input", 
+              placeholder: "Seleccionar fecha" %>
+          <small class="form-help">Fecha en que el empleado comenzará sus vacaciones</small>
+        </div>
+
+        <div class="form-group">
+          <%= form.label :vacation_days, "Días de Vacaciones", class: "form-label" %>
+          <%= form.number_field :vacation_days, 
+              class: "form-input", 
+              placeholder: "Ej: 15",
+              min: 1,
+              max: 60 %>
+          <small class="form-help">Número de días calendario de vacaciones</small>
+        </div>
+
+        <div class="form-group">
+          <%= form.label :vacation_notes, "Observaciones", class: "form-label" %>
+          <%= form.text_area :vacation_notes, 
+              class: "form-textarea", 
+              rows: 3,
+              placeholder: "Notas adicionales sobre las vacaciones..." %>
+          <small class="form-help">Información adicional sobre las vacaciones (opcional)</small>
+        </div>
+
+        <div class="form-actions">
+          <%= form.submit "💾 Guardar Cambios", class: "btn btn-primary" %>
+          <%= link_to "🗑️ Limpiar Vacaciones", 
+              admin_vacation_path(@employee), 
+              method: :patch,
+              params: { employee: { vacation_date: nil, vacation_days: nil, vacation_notes: nil } },
+              class: "btn btn-danger",
+              confirm: "¿Está seguro de que desea limpiar las vacaciones de este empleado?" %>
+          <% if @employee.vacation_date.present? && @employee.vacation_days.present? %>
+            <%= link_to "📄 Generar PDF", 
+                generate_pdf_admin_vacation_path(@employee), 
+                class: "btn btn-success",
+                target: "_blank" %>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="vacation-calculator">
+      <h2>🧮 Calculadora de Vacaciones</h2>
+      
+      <div class="calculator-info">
+        <div class="calc-item">
+          <span class="calc-label">📅 Fecha de Inicio:</span>
+          <span class="calc-value" id="start-date">
+            <%= @employee.vacation_date&.strftime('%d/%m/%Y') || 'No definida' %>
+          </span>
+        </div>
+        
+        <div class="calc-item">
+          <span class="calc-label">📆 Días Solicitados:</span>
+          <span class="calc-value" id="vacation-days">
+            <%= @employee.vacation_days || 'No definido' %>
+          </span>
+        </div>
+        
+        <div class="calc-item">
+          <span class="calc-label">🏁 Fecha de Regreso:</span>
+          <span class="calc-value" id="return-date">
+            <% if @employee.vacation_date && @employee.vacation_days %>
+              <%= (@employee.vacation_date + @employee.vacation_days.days).strftime('%d/%m/%Y') %>
+            <% else %>
+              No calculable
+            <% end %>
+          </span>
+        </div>
+        
+        <% if @employee.vacation_date %>
+          <div class="calc-item">
+            <span class="calc-label">⏰ Estado Actual:</span>
+            <span class="calc-value status-badge" id="current-status">
+              <% days_diff = (Date.current - @employee.vacation_date).to_i %>
+              <% if days_diff < -7 %>
+                <span class="status upcoming">Próximas (en <%= days_diff.abs %> días)</span>
+              <% elsif days_diff >= -7 && days_diff <= 7 %>
+                <span class="status current">En curso</span>
+              <% else %>
+                <span class="status expired">Vencidas (hace <%= days_diff %> días)</span>
+              <% end %>
+            </span>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="vacation-tips">
+        <h3>💡 Consejos</h3>
+        <ul>
+          <li>Las vacaciones se calculan en días calendario (incluye fines de semana)</li>
+          <li>Se considera "en curso" cuando están dentro de ±7 días de la fecha actual</li>
+          <li>Las vacaciones vencidas aparecen cuando han pasado más de 7 días</li>
+          <li>Puede limpiar las vacaciones si el empleado ya las tomó</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  :root {
+    --red-primary: #dc2626;
+    --red-secondary: #b91c1c;
+    --gray-lead: #4a5568;
+    --gray-lead-light: #718096;
+    --gray-lead-dark: #2d3748;
+    --white: #ffffff;
+    --green: #10b981;
+    --yellow: #f59e0b;
+    --blue: #3b82f6;
+  }
+
+  .vacation-edit {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .edit-header {
+    background: var(--white);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .employee-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .employee-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--red-primary);
+  }
+
+  .employee-details h1 {
+    margin: 0;
+    color: var(--gray-lead-dark);
+    font-size: 1.5rem;
+  }
+
+  .employee-meta {
+    margin: 0.25rem 0 0 0;
+    color: var(--gray-lead);
+    font-size: 0.9rem;
+  }
+
+  .employee-meta span {
+    margin: 0 0.5rem;
+  }
+
+  .edit-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+
+  .edit-form, .vacation-calculator {
+    background: var(--white);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .edit-form h2, .vacation-calculator h2 {
+    margin: 0 0 1.5rem 0;
+    color: var(--gray-lead-dark);
+    font-size: 1.3rem;
+    border-bottom: 2px solid #f3f4f6;
+    padding-bottom: 0.5rem;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-label {
+    display: block;
+    font-weight: 600;
+    color: var(--gray-lead-dark);
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .form-input, .form-textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+    box-sizing: border-box;
+  }
+
+  .form-input:focus, .form-textarea:focus {
+    outline: none;
+    border-color: var(--red-primary);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+  }
+
+  .form-help {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--gray-lead-light);
+    font-size: 0.8rem;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-primary {
+    background: var(--red-primary);
+    color: var(--white);
+  }
+
+  .btn-primary:hover {
+    background: var(--red-secondary);
+    transform: translateY(-2px);
+  }
+
+  .btn-secondary {
+    background: var(--gray-lead);
+    color: var(--white);
+  }
+
+  .btn-danger {
+    background: #ef4444;
+    color: var(--white);
+  }
+
+  .btn-success {
+    background: var(--green);
+    color: var(--white);
+  }
+
+  .btn-success:hover {
+    background: #059669;
+    transform: translateY(-2px);
+  }
+
+  .calculator-info {
+    margin-bottom: 2rem;
+  }
+
+  .calc-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .calc-label {
+    color: var(--gray-lead);
+    font-weight: 500;
+  }
+
+  .calc-value {
+    color: var(--gray-lead-dark);
+    font-weight: 600;
+  }
+
+  .status-badge .status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .status.upcoming {
+    background: #dbeafe;
+    color: var(--blue);
+  }
+
+  .status.current {
+    background: #d1fae5;
+    color: var(--green);
+  }
+
+  .status.expired {
+    background: #fee2e2;
+    color: var(--red-primary);
+  }
+
+  .vacation-tips {
+    background: #f8fafc;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border-left: 4px solid var(--blue);
+  }
+
+  .vacation-tips h3 {
+    margin: 0 0 1rem 0;
+    color: var(--gray-lead-dark);
+    font-size: 1rem;
+  }
+
+  .vacation-tips ul {
+    margin: 0;
+    padding-left: 1.5rem;
+    color: var(--gray-lead);
+  }
+
+  .vacation-tips li {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  @media (max-width: 1024px) {
+    .edit-content {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .vacation-edit {
+      padding: 1rem;
+    }
+    
+    .edit-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    
+    .form-actions {
+      flex-direction: column;
+    }
+    
+    .calc-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+  }
+</style>
+
+

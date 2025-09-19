@@ -1,0 +1,1725 @@
+class Admin::ReportsController < ApplicationController
+  layout 'admin'
+  
+  require 'prawn'
+  require 'prawn/table'
+  
+  # Suprimir warning sobre fuentes internacionales
+  Prawn::Fonts::AFM.hide_m17n_warning = true
+  before_action :authenticate_admin!
+
+  def index
+
+    @recent_reports = []
+    @report_types = [
+      {
+        id: 'employees',
+        name: 'Reporte de Empleados',
+        description: 'Información completa de empleados con filtros personalizables',
+        icon: '👥',
+        color: 'blue'
+      },
+      {
+        id: 'payment_accounts',
+        name: 'Cuentas de Pago',
+        description: 'Reporte de cuentas bancarias y pago móvil',
+        icon: '💳',
+        color: 'green'
+      },
+      {
+        id: 'family_detailed',
+        name: 'Carga Familiar',
+        description: 'Información de familiares de empleados (formato Excel)',
+        icon: '👨‍👩‍👧‍👦',
+        color: 'purple'
+      },
+      {
+        id: 'sizes',
+        name: 'Tallas de Empleados',
+        description: 'Tallas de uniformes y calzado',
+        icon: '👕',
+        color: 'yellow'
+      },
+      {
+        id: 'cards',
+        name: 'Carnets y Tarjetas',
+        description: 'Carnets del partido y PSUV',
+        icon: '🪪',
+        color: 'red'
+      },
+      {
+        id: 'vacation_report',
+        name: 'Empleados en Vacaciones',
+        description: 'Trabajadores con fechas de vacaciones próximas o vencidas',
+        icon: '🏖️',
+        color: 'teal'
+      },
+      {
+        id: 'vacation_request',
+        name: 'Solicitud de Vacaciones',
+        description: 'Formulario oficial para solicitar vacaciones con datos del empleado',
+        icon: '📋',
+        color: 'orange'
+      },
+      {
+        id: 'signature_report',
+        name: 'Reporte de Firmas',
+        description: 'Reporte personalizable con firma y observaciones de empleados',
+        icon: '✍️',
+        color: 'indigo'
+      }
+    ]
+  end
+
+  def generate_direct
+    @report_type = params[:type]
+    @filters = params[:filters]&.permit! || {}
+    
+    case @report_type
+    when 'family_detailed'
+      generate_family_detailed_report
+      
+      # Generar el PDF directamente usando el método correcto
+      pdf = generate_pdf_report(@data, @report_type, @filters)
+      send_data pdf.render, 
+                filename: "reporte_carga_familiar_#{Date.current.strftime('%Y%m%d')}_#{Time.current.strftime('%H%M')}.pdf",
+                type: 'application/pdf',
+                disposition: 'attachment'
+    else
+      redirect_to admin_reports_path, alert: 'Tipo de reporte no válido para generación directa'
+    end
+  end
+
+  def new
+    @report_type = params[:type] || 'employees'
+    @filters = build_filters_for_type(@report_type)
+  end
+
+  def generate
+    @report_type = params[:report_type]
+    @filters = params[:filters]&.permit! || {}
+    
+    respond_to do |format|
+      begin
+        case @report_type
+        when 'employees'
+          generate_employee_report
+        when 'payment_accounts'
+          generate_payment_accounts_report
+        when 'family_detailed'
+          generate_family_detailed_report
+        when 'sizes'
+          generate_sizes_report
+        when 'cards'
+          generate_cards_report
+        when 'vacation_report'
+          generate_vacation_report
+        when 'vacation_request'
+          generate_vacation_request_report
+        when 'signature_report'
+          generate_signature_report
+        else
+          format.html { redirect_to admin_reports_path, alert: 'Tipo de reporte no válido' }
+          return
+        end
+
+        # Generar PDF
+        pdf = generate_pdf_report(@data, @report_type, @filters)
+        
+        # Enviar el PDF
+        format.pdf do
+          send_data pdf.render,
+                    filename: "reporte_#{@report_type}_#{Date.current.strftime('%Y%m%d_%H%M')}.pdf",
+                    type: 'application/pdf',
+                    disposition: 'attachment'
+        end
+        
+        format.html do
+          send_data pdf.render,
+                    filename: "reporte_#{@report_type}_#{Date.current.strftime('%Y%m%d_%H%M')}.pdf",
+                    type: 'application/pdf',
+                    disposition: 'attachment'
+        end
+        
+      rescue => e
+        Rails.logger.error "Error generando reporte: #{e.message}"
+        format.html { redirect_to admin_reports_path, alert: "Error generando el reporte: #{e.message}" }
+      end
+    end
+  end
+
+  def employee_report
+    redirect_to new_admin_reports_path(type: 'employees')
+  end
+
+  def payment_accounts_report
+    redirect_to new_admin_reports_path(type: 'payment_accounts')
+  end
+
+  def family_report
+    redirect_to new_admin_reports_path(type: 'family')
+  end
+
+  def sizes_report
+    redirect_to new_admin_reports_path(type: 'sizes')
+  end
+
+  def cards_report
+    redirect_to new_admin_reports_path(type: 'cards')
+  end
+
+  def vacation_request_report
+    redirect_to new_admin_reports_path(type: 'vacation_request')
+  end
+
+  private
+
+  def build_filters_for_type(type)
+    case type
+    when 'employees'
+      {
+        active: ['Todos', 'Activos', 'Inactivos'],
+        hire_date_from: 'date',
+        hire_date_to: 'date',
+        include_photo: 'boolean',
+        include_addresses: 'boolean',
+        include_skills: 'boolean',
+        include_vacations: 'boolean'
+      }
+    when 'payment_accounts'
+      {
+        account_type: ['Todos', 'Bancarias', 'Pago Móvil'],
+        is_primary: ['Todas', 'Principales', 'Secundarias'],
+        active: ['Todas', 'Activas', 'Inactivas'],
+        bank_name: 'text'
+      }
+    when 'family_detailed'
+      {
+        gender: ['Todos', 'masculino', 'femenino'],
+        education_level: ['Todos', 'maternal', 'preescolar', 'primaria', 'secundaria', 'bachillerato', 'tecnico', 'universitario', 'postgrado'],
+        age_from: 'number',
+        age_to: 'number'
+      }
+    when 'sizes'
+      {
+        shirt_size: ['Todas', 'XS', 'S', 'M', 'L', 'XL', 'XXL'],
+        shoes_size: 'text',
+        pants_size: 'text'
+      }
+    when 'cards'
+      {
+        card_type: ['Todos', 'Partido', 'PSUV', 'Ambos'],
+        has_party_card: ['Todos', 'Con carnet', 'Sin carnet'],
+        has_psuv_card: ['Todos', 'Con carnet', 'Sin carnet']
+      }
+    when 'bank_accounts_detailed'
+      {
+        account_type: ['Todos', 'bank', 'mobile_payment'],
+        bank_name: ['Todos', 'Banesco', 'Banco de Venezuela', 'BBVA', 'Mercantil', 'Banco del Tesoro', 'Bicentenario'],
+        active: ['Todos', 'Activos', 'Inactivos'],
+        is_primary: ['Todas', 'Principales', 'Secundarias']
+      }
+    when 'family_detailed'
+      {
+        gender: ['Todos', 'masculino', 'femenino'],
+        education_level: ['Todos', 'maternal', 'preescolar', 'primaria', 'secundaria', 'bachillerato', 'tecnico', 'universitario', 'postgrado'],
+        age_from: 'number',
+        age_to: 'number'
+      }
+    when 'sizes_detailed'
+      {
+        shirt_size: ['Todas', 'XS', 'S', 'M', 'L', 'XL', 'XXL'],
+        shoes_size: ['Todas', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45'],
+        pants_size: ['Todas', '28', '30', '32', '34', '36', '38', '40', '42', '44']
+      }
+    when 'vacation_report'
+      {
+        vacation_status: ['Todos', 'proximas', 'vencidas', 'actuales'],
+        hire_date_from: 'date',
+        hire_date_to: 'date',
+        active: ['Todos', 'Activos', 'Inactivos']
+      }
+    when 'vacation_request'
+      {
+        employee_id: 'select_employee',
+        vacation_start_date: 'date',
+        vacation_end_date: 'date',
+      vacation_days: 'number'
+      }
+    when 'vacation_request'
+      {
+        employee_id: 'select_employee',
+        vacation_start_date: 'date',
+        vacation_end_date: 'date',
+        vacation_days: 'number'
+      }
+    when 'signature_report'
+      {
+        title: 'text',
+        active: ['Todos', 'Activos', 'Inactivos'],
+        hire_date_from: 'date',
+        hire_date_to: 'date'
+      }
+    else
+      {}
+    end
+  end
+
+  def generate_employee_report
+    @data = Employee.includes(:payment_accounts, :worker_size, :party_card, :psuv_card, :family_members)
+    
+    # Aplicar filtros
+    if @filters['active'].present? && @filters['active'] != 'Todos'
+      @data = @data.where(active: @filters['active'] == 'Activos')
+    end
+    
+    if @filters['hire_date_from'].present?
+      @data = @data.where('hire_date >= ?', @filters['hire_date_from'])
+    end
+    
+    if @filters['hire_date_to'].present?
+      @data = @data.where('hire_date <= ?', @filters['hire_date_to'])
+    end
+    
+    @data = @data.order(:surnames, :names)
+  end
+
+  def generate_payment_accounts_report
+    @data = PaymentAccount.includes(:employee)
+    
+    if @filters['account_type'].present? && @filters['account_type'] != 'Todos'
+      type = @filters['account_type'] == 'Bancarias' ? 'bank' : 'mobile_payment'
+      @data = @data.where(account_type: type)
+    end
+    
+    if @filters['is_primary'].present? && @filters['is_primary'] != 'Todas'
+      @data = @data.where(is_primary: @filters['is_primary'] == 'Principales')
+    end
+    
+    if @filters['active'].present? && @filters['active'] != 'Todas'
+      @data = @data.where(active: @filters['active'] == 'Activas')
+    end
+    
+    if @filters['bank_name'].present?
+      @data = @data.where('bank_name ILIKE ?', "%#{@filters['bank_name']}%")
+    end
+    
+    @data = @data.joins(:employee).order('employees.surnames', 'employees.names')
+  end
+
+  def generate_family_report
+    @data = FamilyMember.includes(:employee)
+    
+    if @filters['gender'].present? && @filters['gender'] != 'Todos'
+      @data = @data.where(gender: @filters['gender'])
+    end
+    
+    if @filters['education_level'].present? && @filters['education_level'] != 'Todos'
+      @data = @data.where(education_level: @filters['education_level'])
+    end
+    
+    @data = @data.joins(:employee).order('employees.surnames', 'employees.names', :names)
+  end
+
+  def generate_sizes_report
+    @data = WorkerSize.includes(:employee)
+    
+    if @filters['shirt_size'].present? && @filters['shirt_size'] != 'Todas'
+      @data = @data.where(shirt_size: @filters['shirt_size'])
+    end
+    
+    if @filters['shoes_size'].present?
+      @data = @data.where('shoes_size ILIKE ?', "%#{@filters['shoes_size']}%")
+    end
+    
+    if @filters['pants_size'].present?
+      @data = @data.where('pants_size ILIKE ?', "%#{@filters['pants_size']}%")
+    end
+    
+    @data = @data.joins(:employee).order('employees.surnames', 'employees.names')
+  end
+
+  def generate_cards_report
+    @data = Employee.includes(:party_card, :psuv_card)
+    
+    # Aplicar filtros principales de tipo de carnet
+    case @filters['card_type']
+    when 'Partido'
+      # Solo empleados con carnet del partido
+      case @filters['has_party_card']
+      when 'Con carnet'
+        @data = @data.joins(:party_card)
+      when 'Sin carnet'
+        @data = @data.left_joins(:party_card).where(party_cards: { id: nil })
+      else
+        @data = @data.joins(:party_card)  # Por defecto mostrar con carnet
+      end
+    when 'PSUV'
+      # Solo empleados con carnet PSUV
+      case @filters['has_psuv_card']
+      when 'Con carnet'
+        @data = @data.joins(:psuv_card)
+      when 'Sin carnet'
+        @data = @data.left_joins(:psuv_card).where(psuv_cards: { id: nil })
+      else
+        @data = @data.joins(:psuv_card)  # Por defecto mostrar con carnet
+      end
+    when 'Ambos'
+      # Empleados con ambos carnets
+      @data = @data.joins(:party_card, :psuv_card)
+    else
+      # Sin filtro específico, aplicar filtros individuales
+      case @filters['has_party_card']
+      when 'Con carnet'
+        @data = @data.joins(:party_card)
+      when 'Sin carnet'
+        @data = @data.left_joins(:party_card).where(party_cards: { id: nil })
+      end
+      
+      case @filters['has_psuv_card']
+      when 'Con carnet'
+        @data = @data.joins(:psuv_card)
+      when 'Sin carnet'
+        @data = @data.left_joins(:psuv_card).where(psuv_cards: { id: nil })
+      end
+    end
+    
+    @data = @data.order(:surnames, :names)
+  end
+
+
+  def generate_family_detailed_report
+    @data = FamilyMember.includes(:employee)
+    
+    # Aplicar filtros
+    if @filters['gender'].present? && @filters['gender'] != 'Todos'
+      @data = @data.where(gender: @filters['gender'])
+    end
+    
+    if @filters['education_level'].present? && @filters['education_level'] != 'Todos'
+      @data = @data.where(education_level: @filters['education_level'])
+    end
+    
+    if @filters['age_from'].present?
+      birth_date_to = Date.current - @filters['age_from'].to_i.years
+      @data = @data.where('birth_date <= ?', birth_date_to)
+    end
+    
+    if @filters['age_to'].present?
+      birth_date_from = Date.current - @filters['age_to'].to_i.years
+      @data = @data.where('birth_date >= ?', birth_date_from)
+    end
+    
+    @data = @data.joins(:employee).order('employees.surnames', 'employees.names', :names)
+  end
+
+
+  def generate_vacation_report
+    @data = Employee.all
+    
+    # Filtros específicos para vacaciones
+    if @filters['vacation_status'] == 'proximas'
+      # Empleados con vacaciones en los próximos 30 días
+      from_date = Date.current
+      to_date = Date.current + 30.days
+      @data = @data.where(vacation_date: from_date..to_date)
+    elsif @filters['vacation_status'] == 'vencidas'
+      # Empleados con vacaciones vencidas
+      @data = @data.where('vacation_date < ?', Date.current)
+    elsif @filters['vacation_status'] == 'actuales'
+      # Empleados actualmente en vacaciones (dentro de un rango de ±7 días)
+      from_date = Date.current - 7.days
+      to_date = Date.current + 7.days
+      @data = @data.where(vacation_date: from_date..to_date)
+    end
+    
+    if @filters['hire_date_from'].present?
+      @data = @data.where('hire_date >= ?', Date.parse(@filters['hire_date_from']))
+    end
+    
+    if @filters['hire_date_to'].present?
+      @data = @data.where('hire_date <= ?', Date.parse(@filters['hire_date_to']))
+    end
+    
+    if @filters['active'].present? && @filters['active'] != 'Todos'
+      @data = @data.where(active: @filters['active'] == 'Activos')
+    end
+    
+    @data = @data.order(:vacation_date, :surnames, :names)
+  end
+
+  def generate_vacation_request_report
+    # Para solicitud de vacaciones, solo necesitamos el empleado seleccionado
+    if @filters['employee_id'].present?
+      @data = Employee.where(id: @filters['employee_id'])
+    else
+      @data = Employee.first(1) # Si no se selecciona empleado, tomar el primero como ejemplo
+    end
+    
+    # Asegurar que tengamos al menos un empleado
+    @data = [Employee.first] if @data.empty?
+    
+    # Agregar información adicional de la solicitud
+    @vacation_request_data = {
+      start_date: @filters['vacation_start_date'],
+      end_date: @filters['vacation_end_date'],
+      days: @filters['vacation_days']
+    }
+  end
+
+  def generate_signature_report
+    data = Employee.all
+    
+    # Aplicar filtros
+    if @filters['active'].present? && @filters['active'] != 'Todos'
+      data = data.where(active: @filters['active'] == 'Activos')
+    end
+    
+    if @filters['hire_date_from'].present?
+      data = data.where('hire_date >= ?', @filters['hire_date_from'])
+    end
+    
+    if @filters['hire_date_to'].present?
+      data = data.where('hire_date <= ?', @filters['hire_date_to'])
+    end
+    
+    data = data.order(:surnames, :names)
+    
+    @data = data
+  end
+
+  def generate_pdf_report(data, report_type, filters)
+    ReportPdfGenerator.new(data, report_type, filters).generate
+  end
+
+  # Clase interna para generar PDFs
+  class ReportPdfGenerator
+    def initialize(data, report_type, filters = {})
+      @data = data
+      @report_type = report_type
+      @filters = filters
+      @pdf = Prawn::Document.new(
+        page_size: 'A4',
+        margin: [50, 50, 50, 50]
+      )
+    end
+
+    def generate
+      add_header
+      add_title
+      add_filters_summary
+      add_content
+      add_footer
+      @pdf
+    end
+
+    private
+
+    def add_header
+      # Agregar imagen de encabezado
+      begin
+        image_path = Rails.root.join('app', 'assets', 'images', 'encabezado.png')
+        if File.exist?(image_path)
+          # Calcular dimensiones para que la imagen se ajuste al ancho de la página
+          # manteniendo la proporción
+          @pdf.image image_path, 
+                    width: @pdf.bounds.width,
+                    position: :center,
+                    fit: [@pdf.bounds.width, 120]
+          @pdf.move_down 15
+        else
+          # Fallback al encabezado de texto si no existe la imagen
+          add_text_header
+        end
+      rescue => e
+        Rails.logger.warn "No se pudo cargar la imagen de encabezado: #{e.message}"
+        # Fallback al encabezado de texto
+        add_text_header
+      end
+      
+      # Línea separadora
+      @pdf.stroke_horizontal_rule
+      @pdf.move_down 20
+      
+      # Información del reporte
+     
+    
+    end
+
+
+    def add_title
+      title = case @report_type
+              when 'employees'
+                'REPORTE DE EMPLEADOS'
+              when 'payment_accounts'
+                'REPORTE DE CUENTAS DE PAGO'
+              when 'family_detailed'
+                'REPORTE DE CARGA FAMILIAR'
+              when 'sizes'
+                'REPORTE DE TALLAS DE EMPLEADOS'
+              when 'cards'
+                'REPORTE DE CARNETS Y TARJETAS'
+              when 'vacation_report'
+                'REPORTE DE EMPLEADOS EN VACACIONES'
+              when 'vacation_request'
+                ''
+              when 'signature_report'
+                @filters['title'].present? ? @filters['title'].upcase : 'REPORTE DE EMPLEADOS'
+              else
+                'REPORTE GENERAL'
+              end
+      
+      @pdf.text title, size: 14, style: :bold, align: :center
+      @pdf.move_down 10
+      
+      # Fecha y hora del reporte
+      @pdf.text "Generado el: #{Time.current.strftime('%d/%m/%Y a las %H:%M')}", size: 8, align: :center
+      @pdf.move_down 5
+    end
+
+    def add_filters_summary
+      return if @filters.empty?
+      
+      # No mostrar filtros para solicitud de vacaciones ya que es un formulario
+      return if @report_type == 'vacation_request'
+      
+      # No mostrar filtros para reporte de firmas ya que el título se muestra en el encabezado
+      return if @report_type == 'signature_report'
+      
+      @filters.each do |key, value|
+        next if value.blank? || value == 'Todos' || value == 'Todas'
+        
+        filter_name = key.to_s.humanize
+        @pdf.text "• #{filter_name}: #{value}", size: 8
+      end
+      
+      @pdf.move_down 10
+    end
+
+    def add_content
+      case @report_type
+      when 'employees'
+        add_employees_table
+      when 'payment_accounts'
+        add_payment_accounts_table
+      when 'family_detailed'
+        add_family_detailed_table
+      when 'sizes'
+        add_sizes_table
+      when 'cards'
+        add_cards_table
+      when 'vacation_report'
+        add_vacation_table
+      when 'vacation_request'
+        add_vacation_request_form
+      when 'signature_report'
+        add_signature_table
+      end
+    end
+
+    def add_employees_table
+      return if @data.empty?
+      
+      headers = ['#', 'Nombres', 'Apellidos', 'Cédula', 'Fecha Ingreso', 'Estado']
+      table_data = [headers]
+      
+      @data.each_with_index do |employee, index|
+        row = [
+          index + 1,
+          employee.names || 'N/A',
+          employee.surnames || 'N/A',
+          employee.identification_number || 'N/A',
+          employee.hire_date&.strftime('%d/%m/%Y') || 'N/A',
+          employee.active? ? 'Activo' : 'Inactivo'
+        ]
+        table_data << row
+      end
+      
+      create_table(table_data)
+    end
+
+    def add_payment_accounts_table
+      return if @data.empty?
+      
+      headers = ['#', 'Empleado', 'Tipo', 'Banco', 'Número', 'Estado']
+      table_data = [headers]
+      
+      @data.each_with_index do |account, index|
+        table_data << [
+          index + 1,
+          account.employee&.full_name || 'N/A',
+          account.account_type == 'bank' ? 'Bancaria' : 'Pago Móvil',
+          account.bank_name || account.mobile_payment_number || 'N/A',
+          account.account_number || 'N/A',
+          account.active? ? 'Activa' : 'Inactiva'
+        ]
+      end
+      
+      create_table(table_data)
+    end
+
+    def add_family_table
+      return if @data.empty?
+      
+      headers = ['#', 'Empleado', 'Familiar', 'Sexo', 'Fecha Nac.', 'Educación']
+      table_data = [headers]
+      
+      @data.each_with_index do |member, index|
+        table_data << [
+          index + 1,
+          member.employee&.full_name || 'N/A',
+          member.names || 'N/A',
+          member.gender_humanized || 'N/A',
+          member.birth_date&.strftime('%d/%m/%Y') || 'N/A',
+          member.education_level&.humanize || 'N/A'
+        ]
+      end
+      
+      create_table(table_data)
+    end
+
+    def add_sizes_table
+      return if @data.empty?
+      
+      headers = ['#', 'Empleado', 'Camisa', 'Zapatos', 'Pantalón']
+      table_data = [headers]
+      
+      @data.each_with_index do |size, index|
+        table_data << [
+          index + 1,
+          size.employee&.full_name || 'N/A',
+          size.shirt_size || 'N/A',
+          size.shoes_size || 'N/A',
+          size.pants_size || 'N/A'
+        ]
+      end
+      
+      create_table(table_data)
+    end
+
+    def add_cards_table
+      return if @data.empty?
+      
+      # Determinar qué columnas mostrar según el filtro
+      case @filters['card_type']
+      when 'Partido'
+        headers = ['#', 'Empleado', 'Carnet Partido']
+      when 'PSUV'
+        headers = ['#', 'Empleado', 'Carnet PSUV']
+      else
+        # Por defecto o 'Ambos' - mostrar ambas columnas
+        headers = ['#', 'Empleado', 'Carnet Partido', 'Carnet PSUV']
+      end
+      
+      table_data = [headers]
+      
+      @data.each_with_index do |employee, index|
+        case @filters['card_type']
+        when 'Partido'
+          table_data << [
+            index + 1,
+            employee.full_name || 'N/A',
+            employee.party_card&.code || 'Sin carnet'
+          ]
+        when 'PSUV'
+          table_data << [
+            index + 1,
+            employee.full_name || 'N/A',
+            employee.psuv_card&.code || 'Sin carnet'
+          ]
+        else
+          # Por defecto o 'Ambos' - mostrar ambas columnas
+          table_data << [
+            index + 1,
+            employee.full_name || 'N/A',
+            employee.party_card&.code || 'Sin carnet',
+            employee.psuv_card&.code || 'Sin carnet'
+          ]
+        end
+      end
+      
+      create_table(table_data)
+    end
+
+
+    def add_family_detailed_table
+      return if @data.empty?
+      
+      # Títulos exactos como el Excel
+      @pdf.move_down 5
+      @pdf.text "TRABAJADORES RESERVA ACTIVA", size: 12, style: :bold, align: :center
+      @pdf.move_down 5
+      @pdf.text "RELACION POR EDAD Y SEXO", size: 13, style: :bold, align: :center  
+      @pdf.move_down 5
+      @pdf.text "HIJOS DE LOS TRABAJADORES #{Date.current.year}", size: 12, style: :bold, align: :center
+      @pdf.move_down 15
+
+      # Línea en blanco como el Excel
+      @pdf.move_down 15
+
+      # Encabezados de sección exactos como el Excel - en una sola línea
+      section_headers = [
+        ['DATOS DEL TRABAJADOR', '', '', 'DATOS DE LOS NIÑOS', '', '', '', '', '']
+      ]
+      
+      @pdf.table(section_headers, cell_style: { 
+        size: 11, 
+        padding: [6, 4, 6, 4], 
+        border_width: 0,
+        font_style: :bold,
+        align: :left
+      }) do
+        columns(0..2).style(align: :left)
+        columns(3..8).style(align: :left)
+      end
+
+      # Encabezados de columnas exactos como el Excel
+      headers_data = [
+        ['N°', 'NOMBRE Y APELLIDO', 'C.I.', 'NOMBRE DEL HIJO(A)', 'VARONES', 'EDAD', 'HEMBRAS', 'EDAD', 'GRADO ACADEMICO']
+      ]
+      
+      @pdf.table(headers_data, cell_style: { 
+        size: 9, 
+        padding: [4, 3, 4, 3], 
+        border_width: 1, 
+        border_color: '000000',
+        font_style: :bold,
+        align: :center,
+        background_color: 'FFFFFF'
+      }) do
+        columns(0).style(width: 25)   # N°
+        columns(1).style(width: 85)   # NOMBRE Y APELLIDO  
+        columns(2).style(width: 60)   # C.I.
+        columns(3).style(width: 85)   # NOMBRE DEL HIJO(A)
+        columns(4).style(width: 40)   # VARONES
+        columns(5).style(width: 30)   # EDAD
+        columns(6).style(width: 40)   # HEMBRAS  
+        columns(7).style(width: 30)   # EDAD
+        columns(8).style(width: 80)   # GRADO ACADEMICO
+      end
+
+      # Agrupar datos por empleado
+      employees_with_children = {}
+      @data.each do |member|
+        next unless member.employee
+        employee_key = member.employee.id
+        employees_with_children[employee_key] ||= {
+          employee: member.employee,
+          children: []
+        }
+        employees_with_children[employee_key][:children] << member
+      end
+
+      # Generar filas de datos exactas como el Excel
+      table_data = []
+      employee_counter = 1
+
+      employees_with_children.each do |employee_id, data|
+        employee = data[:employee]
+        children = data[:children].sort_by { |child| child.birth_date || Date.new(1900, 1, 1) }
+
+        children.each_with_index do |child, child_index|
+          # Calcular edad
+          age = child.birth_date ? ((Date.current - child.birth_date) / 365.25).to_i : 0
+          gender = determine_gender_from_db(child)
+          is_male = gender == 'masculino'
+          
+          # Mapear nivel educativo exacto como el Excel
+          education_level = get_specific_education_grade(child, age)
+
+          if child_index == 0
+            # Primera fila del empleado (igual que el Excel)
+        table_data << [
+              employee_counter.to_s,
+              "#{employee.names} #{employee.surnames}".upcase,
+              employee.identification_number,
+              child.names.upcase,
+              is_male ? '1' : '',
+              is_male ? age.to_s : '',
+              is_male ? '' : '1',
+              is_male ? '' : age.to_s,
+              education_level
+            ]
+          else
+            # Filas adicionales para otros hijos (celdas vacías para empleado como en Excel)
+            table_data << [
+              '',
+              '',
+              '',
+              child.names.upcase,
+              is_male ? '1' : '',
+              is_male ? age.to_s : '',
+              is_male ? '' : '1',
+              is_male ? '' : age.to_s,
+              education_level
+            ]
+          end
+        end
+        
+        employee_counter += 1
+      end
+
+      # Crear tabla con estilo exacto del Excel
+      @pdf.table(table_data, cell_style: { 
+        size: 8, 
+        padding: [3, 2, 3, 2], 
+        border_width: 1, 
+        border_color: '000000',
+        align: :left
+      }) do
+        columns(0).style(width: 25, align: :center)   # N°
+        columns(1).style(width: 85, align: :left)     # NOMBRE Y APELLIDO
+        columns(2).style(width: 60, align: :center)   # C.I.
+        columns(3).style(width: 85, align: :left)     # NOMBRE DEL HIJO(A)
+        columns(4).style(width: 40, align: :center)   # VARONES
+        columns(5).style(width: 30, align: :center)   # EDAD
+        columns(6).style(width: 40, align: :center)   # HEMBRAS  
+        columns(7).style(width: 30, align: :center)   # EDAD
+        columns(8).style(width: 80, align: :center)   # GRADO ACADEMICO
+      end
+
+      @pdf.move_down 20
+      
+      # Estadísticas finales en formato de tabla como Excel
+      total_children = @data.count
+      male_children = @data.count { |child| child.gender == 'masculino' }
+      female_children = @data.count { |child| child.gender == 'femenino' }
+      total_employees = employees_with_children.count
+
+  
+      
+      # Tabla de resumen por grado académico
+      add_academic_grade_summary_table
+      
+      @pdf.move_down 30
+      
+      # Tabla de resumen por edad y sexo
+      add_age_sex_summary_table
+    end
+
+    def add_academic_grade_summary_table
+      # Título de la tabla de resumen
+      @pdf.text "HIJOS RESERVA ACTIVA", size: 12, style: :bold, align: :center
+      @pdf.move_down 5
+      @pdf.text "RESUMEN POR GRADO ACADÉMICO", size: 10, style: :bold, align: :center
+      @pdf.move_down 5
+      @pdf.text "AL #{Date.current.strftime('%d DE %B %Y').upcase}", size: 8, align: :center
+      @pdf.move_down 15
+
+      # Calcular estadísticas por grado académico
+      grade_stats = {}
+      
+      @data.each do |child|
+        age = child.birth_date ? ((Date.current - child.birth_date) / 365.25).to_i : 0
+        grade = get_specific_education_grade(child, age)
+        gender = determine_gender_from_db(child)
+        
+        
+        grade_stats[grade] ||= { 'masculino' => 0, 'femenino' => 0 }
+        grade_stats[grade][gender] += 1
+      end
+
+      # Ordenar los grados académicos en orden lógico
+      grade_order = [
+        'MATERNAL', 'PREESCOLAR', 'PRIMARIA', 'SECUNDARIA', 'BACHILLERATO',
+        '1ER NIVEL', '2DO NIVEL', '3ER NIVEL',
+        '1ER GRADO', '2DO GRADO', '3ER GRADO', '4TO GRADO', '5TO GRADO', '6TO GRADO',
+        '1ER AÑO', '2DO AÑO', '3ER AÑO', '4TO AÑO', '5TO AÑO',
+        'TÉCNICO', 'UNIVERSITARIO', 'POSTGRADO'
+      ]
+
+      # Crear datos de la tabla
+      table_data = [
+        ['GRADO ACADÉMICO', 'VARONES', 'HEMBRAS', 'TOTAL']
+      ]
+
+      total_varones = 0
+      total_hembras = 0
+
+
+      grade_order.each do |grade|
+        next unless grade_stats[grade]
+        
+        varones = grade_stats[grade]['masculino'] || 0
+        hembras = grade_stats[grade]['femenino'] || 0
+        total = varones + hembras
+        
+        next if total == 0 # Solo mostrar grados con niños
+        
+        table_data << [grade, varones.to_s, hembras.to_s, total.to_s]
+        total_varones += varones
+        total_hembras += hembras
+      end
+
+      # Fila de totales
+      table_data << ['TOTALES', total_varones.to_s, total_hembras.to_s, (total_varones + total_hembras).to_s]
+
+      # Crear la tabla con el estilo similar al Excel
+      @pdf.table(table_data, cell_style: { 
+        size: 10, 
+        padding: [6, 8, 6, 8], 
+        border_width: 1, 
+        border_color: '000000',
+        background_color: 'FFFFFF'
+      }) do
+        # Encabezado
+        row(0).style(
+          background_color: 'FFFFFF', 
+          font_style: :bold, 
+          align: :center
+        )
+        
+        # Fila de totales
+        row(-1).style(
+          background_color: 'FFFFFF', 
+          font_style: :bold
+        )
+        
+        # Alineación de columnas
+        columns(0).style(align: :left, width: 200)   # Grado académico
+        columns(1).style(align: :center, width: 80)  # Varones
+        columns(2).style(align: :center, width: 80)  # Hembras  
+        columns(3).style(align: :center, width: 80)  # Total
+      end
+    end
+
+    def add_age_sex_summary_table
+      # Título de la tabla de resumen
+      @pdf.text "RESUMEN POR EDAD Y SEXO", size: 10, style: :bold, align: :center
+      @pdf.move_down 5
+      @pdf.text "AL #{Date.current.strftime('%d DE %B %Y').upcase}", size: 8, align: :center
+      @pdf.move_down 15
+
+      # Calcular estadísticas por edad
+      age_stats = {}
+      
+      @data.each do |child|
+        age = child.birth_date ? ((Date.current - child.birth_date) / 365.25).to_i : 0
+        gender = determine_gender_from_db(child)
+        
+        age_stats[age] ||= { 'masculino' => 0, 'femenino' => 0 }
+        age_stats[age][gender] += 1
+      end
+
+      # Crear datos de la tabla ordenados por edad
+      table_data = [
+        ['EDAD', 'VARONES', 'HEMBRAS', 'TOTAL']
+      ]
+
+      total_varones = 0
+      total_hembras = 0
+
+      # Ordenar por edad (0 a 18 años típicamente)
+      (0..18).each do |age|
+        next unless age_stats[age]
+        
+        varones = age_stats[age]['masculino'] || 0
+        hembras = age_stats[age]['femenino'] || 0
+        total = varones + hembras
+        
+        next if total == 0 # Solo mostrar edades con niños
+        
+        edad_text = age == 1 ? "1 AÑO" : "#{age} AÑOS"
+        table_data << [edad_text, varones.to_s, hembras.to_s, total.to_s]
+        total_varones += varones
+        total_hembras += hembras
+      end
+
+      # Agregar edades mayores a 18 si las hay
+      age_stats.keys.select { |age| age > 18 }.sort.each do |age|
+        varones = age_stats[age]['masculino'] || 0
+        hembras = age_stats[age]['femenino'] || 0
+        total = varones + hembras
+        
+        next if total == 0
+        
+        table_data << ["#{age} AÑOS", varones.to_s, hembras.to_s, total.to_s]
+        total_varones += varones
+        total_hembras += hembras
+      end
+
+      # Fila de totales
+      table_data << ['TOTALES', total_varones.to_s, total_hembras.to_s, (total_varones + total_hembras).to_s]
+
+      # Crear la tabla con el estilo similar al Excel
+      @pdf.table(table_data, cell_style: { 
+        size: 10, 
+        padding: [6, 8, 6, 8], 
+        border_width: 1, 
+        border_color: '000000',
+        background_color: 'FFFFFF'
+      }) do
+        # Encabezado
+        row(0).style(
+          background_color: 'FFFFFF', 
+          font_style: :bold, 
+          align: :center
+        )
+        
+        # Fila de totales
+        row(-1).style(
+          background_color: 'FFFFFF', 
+          font_style: :bold
+        )
+        
+        # Alineación de columnas
+        columns(0).style(align: :left, width: 100)   # Edad
+        columns(1).style(align: :center, width: 80)  # Varones
+        columns(2).style(align: :center, width: 80)  # Hembras  
+        columns(3).style(align: :center, width: 80)  # Total
+      end
+    end
+
+    private
+
+    def determine_gender_from_db(member)
+      # Ahora usamos el campo gender directamente de la base de datos
+      return member.gender if member.gender.present?
+      
+      # Fallback en caso de que no esté definido
+      return 'masculino'
+    end
+
+    def get_specific_education_grade(child, age)
+      # Si tiene grado específico registrado, usar ese
+      if child.specific_grade.present?
+        case child.specific_grade
+        when '1er_grado'
+          return '1ER GRADO'
+        when '2do_grado'
+          return '2DO GRADO'
+        when '3er_grado'
+          return '3ER GRADO'
+        when '4to_grado'
+          return '4TO GRADO'
+        when '5to_grado'
+          return '5TO GRADO'
+        when '6to_grado'
+          return '6TO GRADO'
+        when '1er_año'
+          return '1ER AÑO'
+        when '2do_año'
+          return '2DO AÑO'
+        when '3er_año'
+          return '3ER AÑO'
+        when '4to_año'
+          return '4TO AÑO'
+        when '5to_año'
+          return '5TO AÑO'
+        else
+          return child.specific_grade.gsub('_', ' ').upcase
+        end
+      end
+      
+      # Si no, usar el mapeo automático por edad (método anterior)
+      return map_excel_education_level(child.education_level, age)
+    end
+
+    def map_education_level(level, age)
+      return 'N/A' if level.blank?
+      
+      case level.downcase
+      when 'preescolar'
+        age < 3 ? 'MATERNAL' : "#{age - 2}° NIVEL"
+      when 'primaria'
+        case age
+        when 6..7
+          '1ER GRADO'
+        when 7..8
+          '2DO GRADO'
+        when 8..9
+          '3ER GRADO'
+        when 9..10
+          '4TO GRADO'
+        when 10..11
+          '5TO GRADO'
+        when 11..12
+          '6TO GRADO'
+        else
+          'PRIMARIA'
+        end
+      when 'secundaria', 'bachillerato'
+        case age
+        when 12..13
+          '1ER AÑO'
+        when 13..14
+          '2DO AÑO'
+        when 14..15
+          '3ER AÑO'
+        when 15..16
+          '4TO AÑO'
+        when 16..17
+          '5TO AÑO'
+        else
+          'SECUNDARIA'
+        end
+      when 'universitario'
+        'UNIVERSITARIO'
+      when 'tecnico'
+        'TÉCNICO'
+      when 'postgrado'
+        'POSTGRADO'
+      else
+        level.upcase
+      end
+    end
+
+    def map_excel_education_level(level, age)
+      return 'N/A' if level.blank?
+      
+      # Mapeo exacto como aparece en el Excel
+      case level.downcase
+      when 'maternal'
+        'MATERNAL'
+      when 'preescolar'
+        case age
+        when 0..2
+          'MATERNAL'
+        when 3
+          '1ER NIVEL'
+        when 4
+          '2DO NIVEL'
+        when 5
+          '3ER NIVEL'
+        else
+          'PREESCOLAR'
+        end
+      when 'primaria'
+        case age
+        when 6
+          '1ER GRADO'
+        when 7
+          '2DO GRADO'
+        when 8
+          '3ER GRADO'
+        when 9
+          '4TO GRADO'
+        when 10
+          '5TO GRADO'
+        when 11
+          '6TO GRADO'
+        else
+          'PRIMARIA'
+        end
+      when 'secundaria', 'bachillerato'
+        case age
+        when 12
+          '1ER AÑO'
+        when 13
+          '2DO AÑO'
+        when 14
+          '3ER AÑO'
+        when 15
+          '4TO AÑO'
+        when 16
+          '5TO AÑO'
+        else
+          'BACHILLERATO'
+        end
+      when 'universitario'
+        'UNIVERSITARIO'
+      when 'tecnico'
+        'TÉCNICO'
+      when 'postgrado'
+        'POSTGRADO'
+      else
+        level.upcase
+      end
+    end
+
+
+    def add_vacation_table
+      return if @data.empty?
+      
+      headers = ['#', 'Empleado', 'Cédula', 'F. Ingreso', 'F. Vacaciones', 'Días para/desde', 'Estado']
+      table_data = [headers]
+      
+      @data.each_with_index do |employee, index|
+        if employee.vacation_date
+          days_diff = (employee.vacation_date - Date.current).to_i
+          status = if days_diff < 0
+                    'Vencidas'
+                   elsif days_diff <= 7
+                    'Actuales'
+                   elsif days_diff <= 30
+                    'Próximas'
+                   else
+                    'Futuras'
+                   end
+          days_text = days_diff < 0 ? "#{days_diff.abs} días vencidas" : "#{days_diff} días restantes"
+        else
+          status = 'Sin fecha'
+          days_text = 'N/A'
+        end
+        
+        table_data << [
+          index + 1,
+          employee.full_name || 'N/A',
+          employee.identification_number || 'N/A',
+          employee.hire_date&.strftime('%d/%m/%Y') || 'N/A',
+          employee.vacation_date&.strftime('%d/%m/%Y') || 'N/A',
+          days_text,
+          status
+        ]
+      end
+      
+      create_table(table_data)
+    end
+
+    def add_vacation_request_form
+      return if @data.empty?
+      
+      employee = @data.is_a?(Array) ? @data.first : @data.first
+      
+      
+        # Título principal - exactamente como en la imagen
+        @pdf.text "SOLICITUD DE VACACIONES", size: 10, style: :bold, align: :center
+        @pdf.move_down 5
+      
+      # Tabla 1: Información del empleado - formato exacto de la imagen
+      employee_name = employee&.names ? "#{employee.surnames} #{employee.names}" : 'BRYAN GUTIERREZ'
+      employee_id = employee&.identification_number || 'V-24.704.117'
+      hire_date = employee&.hire_date || Date.current
+      
+      # Primera fila: Apellidos y nombres / Cédula
+      @pdf.table([
+        [
+          { content: "APELLIDOS Y NOMBRES DEL EMPLEADO", font_style: :bold, background_color: 'FFFFFF', align: :center },
+          { content: "CÉDULA DE IDENTIDAD", font_style: :bold, background_color: 'FFFFFF', align: :center }
+        ],
+        [{ content: employee_name, align: :center }, { content: employee_id, align: :center }]
+      ], width: @pdf.bounds.width, cell_style: { 
+        size: 9, padding: [4, 6, 4, 6], border_width: 1, border_color: '000000'
+      }) do
+        rows(0).style(font_style: :bold, background_color: 'FFFFFF')
+      end
+      
+      @pdf.move_down 2
+      
+      # Segunda fila: Cargo, Dependencia, Código - formato exacto de la imagen
+      @pdf.table([
+        [
+          { content: "CARGO", font_style: :bold, background_color: 'FFFFFF', align: :center },
+          { content: employee&.position || "OPERADOR INTEGRAL", font_style: :normal, align: :center },
+          { content: "CODIGO", font_style: :bold, background_color: 'FFFFFF', align: :center },
+          { content: employee&.code || "", font_style: :normal, align: :center }
+        ],
+        [
+          { content: "DEPENDENCIA", font_style: :bold, background_color: 'FFFFFF', align: :center },
+          { content: "ALMACEN", font_style: :normal, colspan: 3, align: :center  }
+        ]
+      ], width: @pdf.bounds.width, cell_style: { 
+        size: 9, padding: [4, 6, 4, 6], border_width: 1, border_color: '000000'
+      }) do
+        rows(0).style(font_style: :bold, background_color: 'FFFFFF')
+        rows(1).style(font_style: :bold, background_color: 'FFFFFF')
+      end
+      
+      # Tabla 2: Información de vacaciones - formato exacto de la imagen
+      vacation_days = @filters['vacation_days']&.to_i || 15
+      start_date = @filters['vacation_start_date']&.to_date || Date.current + 15.days
+      end_date = @filters['vacation_end_date']&.to_date || start_date + vacation_days.days
+      return_date = end_date + 1.day
+      
+      # Fecha de ingreso - estructura exacta de la imagen (2 tablas separadas)
+      @pdf.table([
+        [
+          { content: "FECHA DE INGRESO", font_style: :bold, background_color: 'FFFFFF', align: :center }
+        ]
+      ], width: @pdf.bounds.width, cell_style: { 
+        size: 9, padding: [3, 4, 3, 4], border_width: 1, border_color: '000000'
+      }) do
+        rows(0).style(font_style: :bold, background_color: 'FFFFFF')
+      end
+      
+      @pdf.table([
+        [
+          { content: "DIA", font_style: :bold, background_color: 'FFFFFF', align: :center },
+          { content: "MES", font_style: :bold, background_color: 'FFFFFF', align: :center },
+          { content: "AÑO", font_style: :bold, background_color: 'FFFFFF', align: :center }
+        ],
+        [
+          { content: "01", align: :center },
+          { content: "02", align: :center },
+          { content: "2024", align: :center }
+        ]
+      ], width: @pdf.bounds.width, cell_style: { 
+        size: 9, padding: [3, 4, 3, 4], border_width: 1, border_color: '000000'
+      }) do
+        rows(0).style(font_style: :bold, background_color: 'FFFFFF')
+      end
+      
+      # Período de disfrute solicitado - estructura exacta de la imagen
+      @pdf.table([
+        [
+          { content: "PERÍODO DE DISFRUTE SOLICITADO", font_style: :bold, background_color: 'FFFFFF', align: :center }
+        ]
+      ], width: @pdf.bounds.width, cell_style: { 
+        size: 9, padding: [3, 4, 3, 4], border_width: 1, border_color: '000000'
+      }) do
+        rows(0).style(font_style: :bold, background_color: 'FFFFFF')
+      end
+      
+      @pdf.table([
+        [
+          { content: "CORRESPONDIENTE AL AÑO 2025", font_style: :bold, background_color: 'FFFFFF', align: :center }
+        ]
+      ], width: @pdf.bounds.width, cell_style: { 
+        size: 9, padding: [3, 4, 3, 4], border_width: 1, border_color: '000000'
+      }) do
+        rows(0).style(font_style: :bold, background_color: 'FFFFFF')
+      end
+      
+      # Días vencidos - estructura exacta de la imagen
+      @pdf.table([
+        [
+          { content: "DIAS VENCIDOS", font_style: :bold, background_color: 'FFFFFF', align: :center }
+        ]
+      ], width: @pdf.bounds.width, cell_style: { 
+        size: 9, padding: [3, 4, 3, 4], border_width: 1, border_color: '000000'
+      }) do
+        rows(0).style(font_style: :bold, background_color: 'FFFFFF')
+      end
+      
+      @pdf.table([
+        [
+          { content: "15", align: :center }
+        ]
+      ], width: @pdf.bounds.width, cell_style: { 
+        size: 9, padding: [3, 4, 3, 4], border_width: 1, border_color: '000000'
+      })
+      
+      # Días a disfrutar y pendientes - estructura exacta de la imagen
+      @pdf.table([
+        [
+          { content: "DIAS A DISFRUTAR", font_style: :bold, background_color: 'FFFFFF', align: :center },
+          { content: "DIAS PENDIENTES", font_style: :bold, background_color: 'FFFFFF', align: :center }
+        ]
+      ], width: @pdf.bounds.width, cell_style: { 
+        size: 9, padding: [3, 4, 3, 4], border_width: 1, border_color: '000000'
+      }) do
+        rows(0).style(font_style: :bold, background_color: 'FFFFFF')
+      end
+      
+      @pdf.table([
+        [
+          { content: "15", align: :center },
+          { content: "0", align: :center }
+        ]
+      ], width: @pdf.bounds.width, cell_style: { 
+        size: 9, padding: [3, 4, 3, 4], border_width: 1, border_color: '000000'
+      })
+      
+      # Desde / Hasta - estructura exacta de la imagen (2 tablas separadas sin columnas vacías)
+      @pdf.table([
+        [
+          { content: "DESDE", font_style: :bold, background_color: 'FFFFFF', align: :center },
+          { content: "HASTA", font_style: :bold, background_color: 'FFFFFF', align: :center }
+        ]
+      ], width: @pdf.bounds.width, cell_style: { 
+        size: 9, padding: [3, 4, 3, 4], border_width: 1, border_color: '000000'
+      }) do
+        rows(0).style(font_style: :bold, background_color: 'FFFFFF')
+      end
+      
+      @pdf.table([
+        [
+          { content: "DIA", font_style: :bold, background_color: 'FFFFFF', align: :center },
+          { content: "MES", font_style: :bold, background_color: 'FFFFFF', align: :center },
+          { content: "AÑO", font_style: :bold, background_color: 'FFFFFF', align: :center },
+          { content: "DIA", font_style: :bold, background_color: 'FFFFFF', align: :center },
+          { content: "MES", font_style: :bold, background_color: 'FFFFFF', align: :center },
+          { content: "AÑO", font_style: :bold, background_color: 'FFFFFF', align: :center }
+        ],
+        [
+          { content: "15", align: :center },
+          { content: "09", align: :center },
+          { content: "2025", align: :center },
+          { content: "03", align: :center },
+          { content: "10", align: :center },
+          { content: "2025", align: :center }
+        ]
+      ], width: @pdf.bounds.width, cell_style: { 
+        size: 9, padding: [3, 4, 3, 4], border_width: 1, border_color: '000000'
+      }) do
+        rows(0).style(font_style: :bold, background_color: 'FFFFFF')
+      end
+      
+      # Reincorporación efectiva del trabajador - estructura exacta de la imagen (2 tablas separadas sin columnas vacías)
+      @pdf.table([
+        [
+          { content: "REINCORPORACIÓN EFECTIVA DEL TRABAJADOR", font_style: :bold, background_color: 'FFFFFF', align: :center }
+        ]
+      ], width: @pdf.bounds.width, cell_style: { 
+        size: 9, padding: [3, 4, 3, 4], border_width: 1, border_color: '000000'
+      }) do
+        rows(0).style(font_style: :bold, background_color: 'FFFFFF')
+      end
+      
+      @pdf.table([
+        [
+          { content: "DIA", font_style: :bold, background_color: 'FFFFFF', align: :center },
+          { content: "MES", font_style: :bold, background_color: 'FFFFFF', align: :center },
+          { content: "AÑO", font_style: :bold, background_color: 'FFFFFF', align: :center }
+        ],
+        [
+          { content: "06", align: :center },
+          { content: "10", align: :center },
+          { content: "2025", align: :center }
+        ]
+      ], width: @pdf.bounds.width, cell_style: { 
+        size: 9, padding: [3, 4, 3, 4], border_width: 1, border_color: '000000'
+      }) do
+        rows(0).style(font_style: :bold, background_color: 'FFFFFF')
+      end
+      
+      # Observaciones - formato exacto de la imagen
+      @pdf.table([
+        [
+          { content: "OBSERVACIONES:", font_style: :bold, background_color: 'FFFFFF', align: :center },
+          { content: "SOLO PARA EFECTOS DE DISFRUTE", align: :center }
+        ]
+      ], width: @pdf.bounds.width, cell_style: { 
+        size: 9, padding: [4, 6, 4, 6], border_width: 1, border_color: '000000'
+      }) do
+        columns(0).style(font_style: :bold, background_color: 'FFFFFF', width: 150)
+      end
+      
+      # Sección de firmas - formato exacto de la imagen
+      @pdf.table([
+        [
+          { content: "FIRMA DEL TRABAJADOR", font_style: :bold, align: :center, valign: :bottom },
+          { content: "VERIFICACIÓN DE DATOS CONFORME", font_style: :bold, align: :center, valign: :bottom }
+        ],
+                [
+                  { content: "\n\n\n", height: 50 },
+                  { content: "\n\n\n", height: 50 }
+                ],
+        [
+          { content: "CONFORME:", font_style: :bold, align: :center },
+          { content: "GESTIÓN HUMANA", font_style: :bold, align: :center }
+        ],
+                [
+                  { content: "\n\n", height: 40 },
+                  { content: "\n\n", height: 40 }
+                ],
+        [
+          { content: "JEFE INMEDIATO", font_style: :bold, align: :center },
+          ""
+        ]
+      ], width: @pdf.bounds.width, cell_style: { 
+        size: 9, padding: [4, 6, 4, 6], border_width: 1, border_color: '000000'
+      }) do
+        rows(0).style(font_style: :bold, background_color: 'FFFFFF')
+        rows(2).style(font_style: :bold, background_color: 'FFFFFF')
+        rows(4).style(font_style: :bold, background_color: 'FFFFFF')
+      end
+    end
+
+    def add_vacation_request_form
+      return if @data.empty?
+      
+      employee = @data.is_a?(Array) ? @data.first : @data.first
+      
+      # ZAMORA en la esquina superior derecha
+      @pdf.text_box "ZAMORA", at: [@pdf.bounds.width - 80, @pdf.cursor + 15], size: 12, style: :bold, align: :right
+      @pdf.move_down 25
+      
+      # Título principal
+      @pdf.text "SOLICITUD DE VACACIONES", size: 16, style: :bold, align: :center
+      @pdf.move_down 25
+      
+      # Información del empleado
+      employee_name = employee&.names ? "#{employee.surnames} #{employee.names}" : ''
+      employee_id = employee&.identification_number || ''
+      hire_date = employee&.hire_date || Date.current
+      
+      # Tabla de información del empleado
+      employee_table_data = [
+        ["APELLIDOS Y NOMBRES DEL EMPLEADO", employee_name],
+        ["CÉDULA DE IDENTIDAD", employee_id],
+        ["CARGO", "OPERADOR INTEGRAL"],
+        ["CODIGO", ""],
+        ["DEPENDENCIA", "ALMACEN"],
+        ["FECHA DE INGRESO", "", "DIA", hire_date.day.to_s.rjust(2, '0'), "MES", hire_date.month.to_s.rjust(2, '0'), "AÑO", hire_date.year.to_s]
+      ]
+      
+      # Usar ancho más pequeño para evitar errores
+      table_width = 380
+      
+      @pdf.table(employee_table_data, width: table_width, cell_style: { 
+        size: 8, padding: [2, 4, 2, 4], border_width: 1, border_color: '000000', align: :left 
+      }) do
+        columns(0).style(font_style: :bold, width: 140)
+        columns(1).style(width: 80)
+        row(5).columns(2..7).style(width: 25, align: :center)
+      end
+      
+      @pdf.move_down 20
+      
+      # Período de disfrute solicitado
+      @pdf.text "PERÍODO DE DISFRUTE SOLICITADO", size: 12, style: :bold, align: :center
+      @pdf.text "CORRESPONDIENTE AL AÑO #{Date.current.year}", size: 10, align: :center
+      @pdf.move_down 15
+      
+      # Datos de vacaciones
+      vacation_days = @filters['vacation_days']&.to_i || 15
+      start_date = @filters['vacation_start_date']&.to_date || Date.current + 15.days
+      end_date = @filters['vacation_end_date']&.to_date || start_date + vacation_days.days
+      return_date = end_date + 3.days
+      
+      # Tabla de período de vacaciones
+      vacation_table_data = [
+        ["DIAS VENCIDOS", "15"],
+        ["DIAS A DISFRUTAR", vacation_days.to_s],
+        ["DIAS PENDIENTES", "0"],
+        ["DESDE", "", "DIA", start_date.day.to_s.rjust(2, '0'), "MES", start_date.month.to_s.rjust(2, '0'), "AÑO", start_date.year.to_s],
+        ["HASTA", "", "DIA", end_date.day.to_s.rjust(2, '0'), "MES", end_date.month.to_s.rjust(2, '0'), "AÑO", end_date.year.to_s],
+        ["REINCORPORACIÓN EFECTIVA DEL TRABAJADOR", "", "DIA", return_date.day.to_s.rjust(2, '0'), "MES", return_date.month.to_s.rjust(2, '0'), "AÑO", return_date.year.to_s]
+      ]
+      
+      @pdf.table(vacation_table_data, width: table_width, cell_style: { 
+        size: 8, padding: [2, 4, 2, 4], border_width: 1, border_color: '000000', align: :left 
+      }) do
+        columns(0).style(font_style: :bold, width: 140)
+        columns(1).style(width: 40, align: :center)
+        (3..5).each do |row_index|
+          row(row_index).columns(2..7).style(width: 25, align: :center)
+        end
+      end
+      
+      @pdf.move_down 20
+      
+      # Observaciones
+      @pdf.text "OBSERVACIONES", size: 9, style: :bold
+      @pdf.text "SOLO PARA EFECTOS DE DISFRUTE", size: 8
+      
+      @pdf.move_down 20
+      
+      # Verificación de datos conforme
+      @pdf.text "VERIFICACIÓN DE DATOS CONFORME", size: 12, style: :bold, align: :center
+      @pdf.move_down 15
+      
+      # Tabla de firmas
+      signatures_data = [
+        ["FIRMA DEL TRABAJADOR", "", "JEFE INMEDIATO", "CONFORME"],
+        ["", "", "GESTIÓN HUMANA", "CONFORME"]
+      ]
+      
+      @pdf.table(signatures_data, width: table_width, cell_style: { 
+        size: 8, padding: [8, 4, 8, 4], border_width: 1, border_color: '000000', align: :left 
+      }) do
+        columns(0).style(font_style: :bold, width: 120)
+        columns(2).style(font_style: :bold, width: 120)
+        columns(3).style(align: :center, width: 60)
+      end
+    end
+
+    def add_signature_table
+      return if @data.nil? || @data.empty?
+      
+      # Encabezados de la tabla
+      headers = ['#', 'Nombre Completo', 'Cédula', 'Firma', 'Observaciones']
+      table_data = [headers]
+      
+      # Convertir a array si es necesario
+      data_array = @data.respond_to?(:to_a) ? @data.to_a : @data
+      
+      data_array.each_with_index do |employee, index|
+        # Combinar primer nombre y primer apellido
+        first_name = employee.names&.split&.first || ''
+        first_surname = employee.surnames&.split&.first || ''
+        full_name = "#{first_name} #{first_surname}".strip
+        
+        row = [
+          index + 1,
+          full_name,
+          employee.identification_number || '',
+          '', # Columna de firma (vacía para que se pueda firmar)
+          ''  # Columna de observaciones (vacía para que se pueda escribir)
+        ]
+        table_data << row
+      end
+      
+      # Crear la tabla con estilo especial para firmas usando anchos flexibles
+      available_width = @pdf.bounds.width - 40 # Dejar margen
+      
+      @pdf.table(table_data, 
+                 header: true,
+                 width: available_width,
+                 cell_style: { 
+                   size: 8, # Texto más pequeño para caber más empleados
+                   padding: [3, 2, 3, 2], # Padding mínimo
+                   border_width: 0.5,
+                   border_color: '000000',
+                   background_color: 'FFFFFF'
+                 }) do
+        # Estilo para la cabecera
+        row(0).style(
+          background_color: 'FFFFFF',
+          font_style: :bold,
+          size: 9,
+          align: :center
+        )
+        
+        # Hacer las columnas de firma y observaciones más compactas
+        data_count = data_array.length
+        (1..data_count).each do |row_index|
+          row(row_index).columns(3).style(height: 20) # Columna de firma (más compacta)
+          row(row_index).columns(4).style(height: 20) # Columna de observaciones (más compacta)
+        end
+        
+        # Usar anchos flexibles basados en porcentajes del ancho disponible
+        columns(0).style(width: available_width * 0.08, align: :center)   # Número (8%)
+        columns(1).style(width: available_width * 0.28, align: :left)     # Nombre completo (28%)
+        columns(2).style(width: available_width * 0.18, align: :center)   # Cédula (18%)
+        columns(3).style(width: available_width * 0.23, align: :center)   # Firma (23%)
+        columns(4).style(width: available_width * 0.23, align: :left)     # Observaciones (23%)
+      end
+      
+      @pdf.move_down 10
+    end
+
+    def create_table(data)
+      @pdf.table(data, 
+                 header: true,
+                 width: @pdf.bounds.width, # Usar todo el ancho disponible
+                 cell_style: { 
+                   size: 8,  # Texto más pequeño
+                    
+                   padding: [4, 6, 4, 6], # Más padding para mejor legibilidad
+                   border_width: 0.5,
+                   border_color: '000000',
+                   background_color: 'FFFFFF'  # Fondo blanco para todas las celdas
+                 }) do
+        # Estilo para la cabecera sin color
+        row(0).style(
+          background_color: 'FFFFFF', # Fondo blanco también para la cabecera
+          text_color: '000000',       # Texto negro
+          font_style: :bold,
+          size: 9
+        )
+        
+        # Auto-ajustar el ancho de las columnas
+        columns(0).style(width: 40) # Columna de número un poco más ancha
+      end
+      
+      @pdf.move_down 20
+    end
+
+    def add_footer
+      @pdf.move_down 30
+      
+      # Línea separadora
+      @pdf.stroke_horizontal_rule
+      @pdf.move_down 10
+      
+      # Número de página
+      @pdf.number_pages "Página <page> de <total>",
+                        at: [@pdf.bounds.right - 100, 0],
+                        width: 100,
+                        align: :right,
+                        size: 8
+    end
+  end
+end

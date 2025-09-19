@@ -1,0 +1,237 @@
+<% content_for :page_title, "Detalles del Usuario" %>
+
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <div class="flex-shrink-0 h-16 w-16">
+          <div class="h-16 w-16 rounded-full bg-wine-primary flex items-center justify-center">
+            <span class="text-white font-bold text-xl">
+              <%= @user.first_name[0]&.upcase %><%= @user.last_name[0]&.upcase %>
+            </span>
+          </div>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900"><%= @user.full_name %></h1>
+          <p class="text-gray-600"><%= @user.email %></p>
+          <div class="flex items-center mt-2">
+            <% if @user.active? %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                ✅ Activo
+              </span>
+            <% else %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                🚫 Inactivo
+              </span>
+            <% end %>
+          </div>
+        </div>
+      </div>
+      
+      <div class="flex space-x-3">
+        <%= link_to edit_admin_user_path(@user), 
+            class: "inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors" do %>
+          ✏️ Editar
+        <% end %>
+        
+        <%= link_to manage_roles_admin_user_path(@user), 
+            class: "inline-flex items-center px-4 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors" do %>
+          🔐 Gestionar Roles
+        <% end %>
+        
+        <%= link_to admin_users_path, 
+            class: "inline-flex items-center px-4 py-2 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 transition-colors" do %>
+          ← Volver
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- User Information -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Personal Info -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">👤 Información Personal</h3>
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Nombre</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= @user.first_name %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Apellido</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= @user.last_name %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Email</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= @user.email %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Teléfono</dt>
+            <dd class="mt-1 text-sm text-gray-900">
+              <%= @user.phone.present? ? @user.phone : "No especificado" %>
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <!-- Login Information -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">🔑 Información de Acceso</h3>
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Total de Ingresos</dt>
+            <dd class="mt-1 text-sm text-gray-900"><%= @user.sign_in_count || 0 %></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Último Acceso</dt>
+            <dd class="mt-1 text-sm text-gray-900">
+              <% if @user.last_sign_in_at %>
+                <%= l(@user.last_sign_in_at, format: :long) %>
+                <br><span class="text-gray-500">(<%= time_ago_in_words(@user.last_sign_in_at) %> atrás)</span>
+              <% else %>
+                <span class="text-gray-500">Nunca ha ingresado</span>
+              <% end %>
+            </dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">IP del Último Acceso</dt>
+            <dd class="mt-1 text-sm text-gray-900">
+              <%= @user.last_sign_in_ip || "No disponible" %>
+            </dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Cuenta Creada</dt>
+            <dd class="mt-1 text-sm text-gray-900">
+              <%= l(@user.created_at, format: :long) %>
+              <br><span class="text-gray-500">(<%= time_ago_in_words(@user.created_at) %> atrás)</span>
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <!-- User Roles and Permissions -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-gray-900">🔐 Roles y Permisos</h3>
+          <%= link_to manage_roles_admin_user_path(@user), 
+              class: "text-wine-primary hover:text-wine-secondary font-medium text-sm" do %>
+            Gestionar Roles →
+          <% end %>
+        </div>
+        
+        <% if @user_roles.any? %>
+          <div class="space-y-4">
+            <% @user_roles.each do |role| %>
+              <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="flex items-center">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                                 <%= role.active? ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800' %>">
+                      <%= role.name.humanize %>
+                    </span>
+                    <% unless role.active? %>
+                      <span class="ml-2 text-xs text-red-600">(Inactivo)</span>
+                    <% end %>
+                  </div>
+                  <span class="text-sm text-gray-500"><%= role.permissions.count %> permisos</span>
+                </div>
+                
+                <% if role.description.present? %>
+                  <p class="text-sm text-gray-600 mb-3"><%= role.description %></p>
+                <% end %>
+                
+                <% if role.permissions.any? %>
+                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <% role.permissions.limit(6).each do |permission| %>
+                      <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                        <%= permission.display_name %>
+                      </span>
+                    <% end %>
+                    <% if role.permissions.count > 6 %>
+                      <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-200 text-gray-600">
+                        +<%= role.permissions.count - 6 %> más
+                      </span>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="text-center py-8">
+            <div class="text-gray-400 text-4xl mb-2">🔒</div>
+            <p class="text-gray-500">Este usuario no tiene roles asignados.</p>
+            <%= link_to manage_roles_admin_user_path(@user), 
+                class: "inline-flex items-center mt-3 px-4 py-2 bg-wine-primary text-white font-medium rounded-lg hover:bg-wine-secondary transition-colors" do %>
+              Asignar Roles
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+      <!-- Quick Actions -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">⚡ Acciones Rápidas</h3>
+        <div class="space-y-3">
+          <% if @user.active? %>
+            <%= link_to deactivate_admin_user_path(@user), 
+                method: :patch,
+                data: { confirm: "¿Estás seguro de desactivar este usuario?" },
+                class: "flex items-center w-full px-4 py-2 text-left text-yellow-700 hover:bg-yellow-50 rounded-lg transition-colors" do %>
+              🚫 Desactivar Usuario
+            <% end %>
+          <% else %>
+            <%= link_to activate_admin_user_path(@user), 
+                method: :patch,
+                class: "flex items-center w-full px-4 py-2 text-left text-green-700 hover:bg-green-50 rounded-lg transition-colors" do %>
+              ✅ Activar Usuario
+            <% end %>
+          <% end %>
+          
+          <%= link_to edit_admin_user_path(@user), 
+              class: "flex items-center w-full px-4 py-2 text-left text-blue-700 hover:bg-blue-50 rounded-lg transition-colors" do %>
+            ✏️ Editar Información
+          <% end %>
+          
+          <%= link_to manage_roles_admin_user_path(@user), 
+              class: "flex items-center w-full px-4 py-2 text-left text-purple-700 hover:bg-purple-50 rounded-lg transition-colors" do %>
+            🔐 Gestionar Roles
+          <% end %>
+          
+          <hr class="my-3">
+          
+          <%= link_to admin_user_path(@user), 
+              method: :delete,
+              data: { confirm: "¿Estás seguro de eliminar este usuario? Esta acción no se puede deshacer." },
+              class: "flex items-center w-full px-4 py-2 text-left text-red-700 hover:bg-red-50 rounded-lg transition-colors" do %>
+            🗑️ Eliminar Usuario
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Statistics -->
+      <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">📊 Estadísticas</h3>
+        <div class="space-y-4">
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">Roles asignados</span>
+            <span class="text-lg font-semibold text-gray-900"><%= @user.roles.count %></span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">Permisos totales</span>
+            <span class="text-lg font-semibold text-gray-900"><%= @user.permissions.count %></span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-600">Inicios de sesión</span>
+            <span class="text-lg font-semibold text-gray-900"><%= @user.sign_in_count || 0 %></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

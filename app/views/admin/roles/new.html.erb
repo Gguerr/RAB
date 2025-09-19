@@ -1,0 +1,211 @@
+<% content_for :page_title, "Nuevo Rol" %>
+
+<div class="max-w-6xl mx-auto space-y-6">
+  <!-- Header -->
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">🔐 Crear Nuevo Rol</h1>
+        <p class="text-gray-600 mt-1">Define un nuevo rol con permisos específicos para el sistema</p>
+      </div>
+      <%= link_to admin_roles_path, 
+          class: "inline-flex items-center px-4 py-2 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 transition-colors" do %>
+        ← Volver a Roles
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <%= form_with model: [:admin, @role], local: true, class: "space-y-8" do |form| %>
+      
+      <!-- Display errors if any -->
+      <% if @role.errors.any? %>
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <span class="text-red-400 text-xl">⚠️</span>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800">
+                Se encontraron <%= pluralize(@role.errors.count, "error") %>:
+              </h3>
+              <div class="mt-2 text-sm text-red-700">
+                <ul class="list-disc pl-5 space-y-1">
+                  <% @role.errors.full_messages.each do |message| %>
+                    <li><%= message %></li>
+                  <% end %>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- Basic Information -->
+      <div class="bg-gray-50 rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">📝 Información Básica</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <%= form.label :name, "Nombre del Rol *", class: "block text-sm font-medium text-gray-700 mb-2" %>
+            <%= form.text_field :name, 
+                class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wine-primary focus:border-transparent",
+                placeholder: "ej: admin, manager, employee" %>
+            <p class="mt-1 text-sm text-gray-500">Usa nombres simples en inglés (snake_case recomendado)</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+            <div class="flex items-center">
+              <%= form.check_box :active, 
+                  { checked: true, class: "h-4 w-4 text-wine-primary focus:ring-wine-primary border-gray-300 rounded" },
+                  true, false %>
+              <%= form.label :active, "Rol activo", class: "ml-2 block text-sm text-gray-900" %>
+            </div>
+            <p class="mt-1 text-sm text-gray-500">Los roles inactivos no pueden ser asignados a usuarios</p>
+          </div>
+
+          <div class="md:col-span-2">
+            <%= form.label :description, "Descripción", class: "block text-sm font-medium text-gray-700 mb-2" %>
+            <%= form.text_area :description, 
+                class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wine-primary focus:border-transparent",
+                rows: 3,
+                placeholder: "Describe las responsabilidades y alcance de este rol..." %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Permissions Assignment -->
+      <div class="bg-gray-50 rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">🛡️ Asignación de Permisos</h3>
+        <p class="text-sm text-gray-600 mb-6">Selecciona los permisos que tendrá este rol. Los permisos están organizados por recursos del sistema.</p>
+        
+        <% if @permission_groups.any? %>
+          <div class="space-y-6">
+            <% @permission_groups.each do |resource, permissions| %>
+              <div class="border border-gray-200 rounded-lg p-4 hover:bg-white transition-colors">
+                <div class="flex items-center justify-between mb-4">
+                  <h4 class="text-base font-medium text-gray-900 flex items-center">
+                    <span class="mr-2">
+                      <% case resource %>
+                      <% when 'users' %>
+                        👥
+                      <% when 'roles' %>
+                        🔐
+                      <% when 'permissions' %>
+                        🛡️
+                      <% when 'employees' %>
+                        👨‍💼
+                      <% when 'dashboard' %>
+                        📊
+                      <% when 'reports' %>
+                        📈
+                      <% else %>
+                        📄
+                      <% end %>
+                    </span>
+                    <% 
+                      resource_spanish = case resource
+                      when 'users'
+                        'Usuarios'
+                      when 'roles'
+                        'Roles'
+                      when 'permissions'
+                        'Permisos'
+                      when 'employees'
+                        'Empleados'
+                      when 'dashboard'
+                        'Panel'
+                      when 'reports'
+                        'Reportes'
+                      else
+                        resource.humanize
+                      end
+                    %>
+                    <%= resource_spanish %>
+                  </h4>
+                  <div class="flex items-center space-x-2">
+                    <button type="button" 
+                            onclick="selectAllInGroup('<%= resource %>')"
+                            class="text-xs px-3 py-1 bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition-colors">
+                      Seleccionar Todos
+                    </button>
+                    <button type="button" 
+                            onclick="deselectAllInGroup('<%= resource %>')"
+                            class="text-xs px-3 py-1 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors">
+                      Deseleccionar
+                    </button>
+                  </div>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                  <% permissions.each do |permission| %>
+                    <div class="flex items-start space-x-2 p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
+                      <div class="flex items-center h-5">
+                        <%= check_box_tag "role[permission_ids][]", permission.id, false, 
+                            { class: "h-4 w-4 text-wine-primary focus:ring-wine-primary border-gray-300 rounded permission-checkbox",
+                              data: { resource: resource } } %>
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <label class="text-sm font-medium text-gray-900 cursor-pointer block">
+                          <%= permission.action_in_spanish %>
+                        </label>
+                        <% if permission.description.present? %>
+                          <p class="text-xs text-gray-500 mt-1"><%= permission.description %></p>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+          
+          <!-- Hidden field to handle empty selection -->
+          <%= hidden_field_tag "role[permission_ids][]", "" %>
+          
+          <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+            <h4 class="text-sm font-medium text-blue-900 mb-2">💡 Consejos sobre Permisos</h4>
+            <ul class="text-sm text-blue-700 space-y-1">
+              <li>• <strong>Crear:</strong> Permite crear nuevos registros</li>
+              <li>• <strong>Leer:</strong> Permite ver y listar registros</li>
+              <li>• <strong>Actualizar:</strong> Permite modificar registros existentes</li>
+              <li>• <strong>Eliminar:</strong> Permite eliminar registros</li>
+              <li>• <strong>Gestionar:</strong> Incluye todos los permisos anteriores</li>
+            </ul>
+          </div>
+          
+        <% else %>
+          <div class="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+            <div class="text-gray-400 text-4xl mb-2">🛡️</div>
+            <p class="text-gray-500">No hay permisos disponibles en el sistema.</p>
+            <p class="text-sm text-gray-400 mt-1">Los permisos se crean automáticamente al ejecutar las semillas.</p>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+        <%= link_to admin_roles_path, 
+            class: "px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors" do %>
+          Cancelar
+        <% end %>
+        
+        <%= form.submit "Crear Rol", 
+            class: "px-6 py-3 bg-wine-primary text-white font-medium rounded-lg hover:bg-wine-secondary transition-colors cursor-pointer" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+  function selectAllInGroup(resource) {
+    const checkboxes = document.querySelectorAll(`input[data-resource="${resource}"]`);
+    checkboxes.forEach(checkbox => checkbox.checked = true);
+  }
+  
+  function deselectAllInGroup(resource) {
+    const checkboxes = document.querySelectorAll(`input[data-resource="${resource}"]`);
+    checkboxes.forEach(checkbox => checkbox.checked = false);
+  }
+</script>

@@ -40,6 +40,7 @@ class Admin::EmployeesController < ApplicationController
   end
 
   def update
+    Rails.logger.info "EMPLOYEE PARAMS: #{employee_params.inspect}"
     if @employee.update(employee_params)
       update_associated_records
       redirect_to admin_employee_path(@employee), notice: 'Empleado actualizado exitosamente.'
@@ -80,7 +81,8 @@ class Admin::EmployeesController < ApplicationController
   def employee_params
     params.require(:employee).permit(
       :identification_number, :names, :surnames, :birth_date, :hire_date,
-      :home_address, :vacation_date, :expired_vacations, :skills_abilities, :active,
+      :home_address, :vacation_date, :vacation_days, :vacation_notes, :expired_vacations, :skills_abilities, :active,
+      :email, :phone_number, :position, :code, :voting_center,
       
       # Worker size attributes
       worker_size_attributes: [:id, :shirt_size, :shoes_size, :pants_size],
@@ -96,7 +98,7 @@ class Admin::EmployeesController < ApplicationController
                                    :bank_name, :is_primary, :active, :_destroy],
       
       # Family members attributes
-      family_members_attributes: [:id, :names, :birth_date, :education_level, :relationship, :_destroy]
+      family_members_attributes: [:id, :names, :birth_date, :education_level, :specific_grade, :gender, :_destroy]
     )
   end
 

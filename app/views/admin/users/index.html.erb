@@ -1,0 +1,264 @@
+<% content_for :page_title, "Gestión de Usuarios" %>
+
+<div class="space-y-6">
+  <!-- Header with Search and Actions -->
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-900">👤 Usuarios del Sistema</h2>
+        <p class="text-gray-600 mt-1">Gestiona usuarios, roles y permisos</p>
+      </div>
+      
+      <%= link_to new_admin_user_path, 
+          class: "inline-flex items-center justify-center px-6 py-3 bg-wine-primary text-white font-semibold rounded-lg hover:bg-wine-secondary transition-colors duration-200" do %>
+        <span class="mr-2">+</span>
+        Nuevo Usuario
+      <% end %>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="mt-6 flex flex-col lg:flex-row gap-4">
+      <%= form_with url: admin_users_path, method: :get, local: true, class: "flex flex-col lg:flex-row gap-4 flex-1" do |form| %>
+        <div class="flex-1">
+          <%= form.text_field :search, 
+              placeholder: "Buscar por nombre o email...", 
+              value: params[:search],
+              class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wine-primary focus:border-transparent" %>
+        </div>
+        
+        <div class="lg:w-48">
+          <%= form.select :status, 
+              options_for_select([
+                ['Todos los estados', ''],
+                ['Solo activos', 'active'],
+                ['Solo inactivos', 'inactive']
+              ], params[:status]),
+              {},
+              { class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wine-primary focus:border-transparent" } %>
+        </div>
+        
+        <%= form.submit "Buscar", 
+            class: "px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors" %>
+            
+        <script>
+          // Auto-submit form when select changes
+          document.addEventListener('DOMContentLoaded', function() {
+            const statusSelect = document.querySelector('select[name="status"]');
+            if (statusSelect) {
+              statusSelect.addEventListener('change', function() {
+                this.form.submit();
+              });
+            }
+          });
+        </script>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Users Table -->
+  <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Roles</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Último Acceso</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <% @users.each do |user| %>
+            <tr class="hover:bg-gray-50 transition-colors">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0 h-10 w-10">
+                    <div class="h-10 w-10 rounded-full bg-wine-primary flex items-center justify-center">
+                      <span class="text-white font-semibold text-sm">
+                        <%= user.first_name[0]&.upcase %><%= user.last_name[0]&.upcase %>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-900"><%= user.full_name %></div>
+                    <div class="text-sm text-gray-500">ID: <%= user.id %></div>
+                  </div>
+                </div>
+              </td>
+              
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900"><%= user.email %></div>
+                <% if user.phone.present? %>
+                  <div class="text-sm text-gray-500"><%= user.phone %></div>
+                <% end %>
+              </td>
+              
+              <td class="px-6 py-4">
+                <div class="flex flex-wrap gap-1">
+                  <% user.roles.each do |role| %>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                 <%= role.active? ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800' %>">
+                      <%= role.name.humanize %>
+                    </span>
+                  <% end %>
+                  <% if user.roles.empty? %>
+                    <span class="text-sm text-gray-500 italic">Sin roles</span>
+                  <% end %>
+                </div>
+              </td>
+              
+              <td class="px-6 py-4 whitespace-nowrap">
+                <% if user.active? %>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Activo
+                  </span>
+                <% else %>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    Inactivo
+                  </span>
+                <% end %>
+              </td>
+              
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <% if user.last_sign_in_at %>
+                  <%= time_ago_in_words(user.last_sign_in_at) %> atrás
+                <% else %>
+                  <span class="text-gray-400">Nunca</span>
+                <% end %>
+              </td>
+              
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <div class="flex items-center justify-end space-x-2">
+                  <%= link_to admin_user_path(user), 
+                      class: "text-wine-primary hover:text-wine-secondary transition-colors",
+                      title: "Ver detalles" do %>
+                    👁️
+                  <% end %>
+                  
+                  <%= link_to edit_admin_user_path(user), 
+                      class: "text-blue-600 hover:text-blue-800 transition-colors",
+                      title: "Editar" do %>
+                    ✏️
+                  <% end %>
+                  
+                  <% if user.active? %>
+                    <%= link_to deactivate_admin_user_path(user), 
+                        method: :patch,
+                        data: { confirm: "¿Estás seguro de desactivar este usuario?" },
+                        class: "text-yellow-600 hover:text-yellow-800 transition-colors",
+                        title: "Desactivar" do %>
+                      🚫
+                    <% end %>
+                  <% else %>
+                    <%= link_to activate_admin_user_path(user), 
+                        method: :patch,
+                        class: "text-green-600 hover:text-green-800 transition-colors",
+                        title: "Activar" do %>
+                      ✅
+                    <% end %>
+                  <% end %>
+                  
+                  <%= link_to admin_user_path(user), 
+                      method: :delete,
+                      data: { confirm: "¿Estás seguro de eliminar este usuario? Esta acción no se puede deshacer." },
+                      class: "text-red-600 hover:text-red-800 transition-colors",
+                      title: "Eliminar" do %>
+                    🗑️
+                  <% end %>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    
+    <% if @users.empty? %>
+      <div class="text-center py-12">
+        <div class="text-gray-400 text-6xl mb-4">👤</div>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No se encontraron usuarios</h3>
+        <p class="text-gray-500 mb-6">
+          <% if params[:search].present? %>
+            No hay usuarios que coincidan con tu búsqueda.
+          <% else %>
+            Aún no hay usuarios registrados en el sistema.
+          <% end %>
+        </p>
+        <%= link_to new_admin_user_path, 
+            class: "inline-flex items-center px-4 py-2 bg-wine-primary text-white font-medium rounded-lg hover:bg-wine-secondary transition-colors" do %>
+          <span class="mr-2">+</span>
+          Crear Primer Usuario
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+            <span class="text-blue-600 text-lg">👥</span>
+          </div>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dl>
+            <dt class="text-sm font-medium text-gray-500 truncate">Total Usuarios</dt>
+            <dd class="text-lg font-medium text-gray-900"><%= User.count %></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+            <span class="text-green-600 text-lg">✅</span>
+          </div>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dl>
+            <dt class="text-sm font-medium text-gray-500 truncate">Usuarios Activos</dt>
+            <dd class="text-lg font-medium text-gray-900"><%= User.active.count %></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+            <span class="text-red-600 text-lg">🚫</span>
+          </div>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dl>
+            <dt class="text-sm font-medium text-gray-500 truncate">Usuarios Inactivos</dt>
+            <dd class="text-lg font-medium text-gray-900"><%= User.inactive.count %></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+            <span class="text-purple-600 text-lg">🔐</span>
+          </div>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dl>
+            <dt class="text-sm font-medium text-gray-500 truncate">Total Roles</dt>
+            <dd class="text-lg font-medium text-gray-900"><%= Role.count %></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

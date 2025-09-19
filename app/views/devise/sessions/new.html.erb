@@ -30,9 +30,6 @@
       </div>
     <% end %>
 
-    <div class="login-footer">
-      <%= render "devise/shared/links" %>
-    </div>
   </div>
 </div>
 
@@ -62,7 +59,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #722F37 0%, #6B6B6B 100%);
+    background: linear-gradient(135deg, #dc2626 0%, #4a5568 100%);
     padding: 20px;
     overflow: hidden;
   }
@@ -137,8 +134,8 @@
 
   .form-input:focus {
     outline: none;
-    border-color: #722F37;
-    box-shadow: 0 0 0 3px rgba(114, 47, 55, 0.1);
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
     background-color: white;
   }
 
@@ -151,7 +148,7 @@
   .form-checkbox {
     width: auto !important;
     margin: 0;
-    accent-color: #722F37;
+    accent-color: #dc2626;
   }
 
   .checkbox-label {
@@ -174,7 +171,7 @@
   }
 
   .btn-primary {
-    background: #722F37;
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
     color: white;
   }
 
@@ -186,27 +183,10 @@
   }
 
   .btn-primary:hover {
-    background: #8B3A47;
+    background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(114, 47, 55, 0.25);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
   }
 
-  .login-footer {
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid #E2E8F0;
-  }
-
-  .login-footer a {
-    color: #722F37;
-    text-decoration: none;
-    font-size: 0.875rem;
-    font-weight: 500;
-  }
-
-  .login-footer a:hover {
-    text-decoration: underline;
-    color: #8B3A47;
-  }
 </style>
 

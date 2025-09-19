@@ -40,6 +40,21 @@
         <label>Dirección de Habitación</label>
         <span class="detail-value"><%= @employee.home_address %></span>
       </div>
+
+      <div class="detail-item">
+        <label>Correo Electrónico</label>
+        <span class="detail-value"><%= @employee.email %></span>
+      </div>
+
+      <div class="detail-item">
+        <label>Número de Teléfono</label>
+        <span class="detail-value"><%= @employee.phone_number %></span>
+      </div>
+
+      <div class="detail-item">
+        <label>Centro de Votación</label>
+        <span class="detail-value"><%= @employee.voting_center %></span>
+      </div>
     </div>
   </div>
 
@@ -50,6 +65,16 @@
       <div class="detail-item">
         <label>Fecha de Ingreso</label>
         <span class="detail-value"><%= @employee.hire_date.strftime("%d/%m/%Y") %></span>
+      </div>
+
+      <div class="detail-item">
+        <label>Cargo</label>
+        <span class="detail-value"><%= @employee.position %></span>
+      </div>
+
+      <div class="detail-item">
+        <label>Código</label>
+        <span class="detail-value"><%= @employee.code %></span>
       </div>
       
       <div class="detail-item">
@@ -200,16 +225,11 @@
           <div class="family-card">
             <div class="family-header">
               <h4 class="family-name"><%= member.names %></h4>
-              <span class="relationship-badge">
-                <%= case member.relationship
-                    when 'son' then '👦 Hijo'
-                    when 'daughter' then '👧 Hija'
-                    when 'spouse' then '💑 Cónyuge'
-                    when 'father' then '👨 Padre'
-                    when 'mother' then '👩 Madre'
-                    when 'brother' then '👨‍🦱 Hermano'
-                    when 'sister' then '👩‍🦱 Hermana'
-                    else member.relationship.humanize
+              <span class="gender-badge">
+                <%= case member.gender
+                    when 'masculino' then '👦 Masculino'
+                    when 'femenino' then '👧 Femenino'
+                    else member.gender_humanized
                     end %>
               </span>
             </div>
@@ -439,7 +459,7 @@
     margin: 0;
   }
 
-  .relationship-badge {
+  .gender-badge {
     background: var(--wine-primary);
     color: var(--white);
     padding: 0.25rem 0.75rem;

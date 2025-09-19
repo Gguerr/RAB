@@ -1,0 +1,280 @@
+<% content_for :page_title, "Gestión de Roles" %>
+
+<div class="space-y-6">
+  <!-- Header with Search and Actions -->
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-900">🔐 Roles y Permisos</h2>
+        <p class="text-gray-600 mt-1">Gestiona roles del sistema y sus permisos asociados</p>
+      </div>
+      
+      <%= link_to new_admin_role_path, 
+          class: "inline-flex items-center justify-center px-6 py-3 bg-wine-primary text-white font-semibold rounded-lg hover:bg-wine-secondary transition-colors duration-200" do %>
+        <span class="mr-2">+</span>
+        Nuevo Rol
+      <% end %>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="mt-6 flex flex-col lg:flex-row gap-4">
+      <%= form_with url: admin_roles_path, method: :get, local: true, class: "flex flex-col lg:flex-row gap-4 flex-1" do |form| %>
+        <div class="flex-1">
+          <%= form.text_field :search, 
+              placeholder: "Buscar por nombre o descripción...", 
+              value: params[:search],
+              class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wine-primary focus:border-transparent" %>
+        </div>
+        
+        <div class="lg:w-48">
+          <%= form.select :status, 
+              options_for_select([
+                ['Todos los estados', ''],
+                ['Solo activos', 'active'],
+                ['Solo inactivos', 'inactive']
+              ], params[:status]),
+              {},
+              { class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wine-primary focus:border-transparent" } %>
+        </div>
+        
+        <%= form.submit "Buscar", 
+            class: "px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors" %>
+            
+        <script>
+          // Auto-submit form when select changes
+          document.addEventListener('DOMContentLoaded', function() {
+            const statusSelect = document.querySelector('select[name="status"]');
+            if (statusSelect) {
+              statusSelect.addEventListener('change', function() {
+                this.form.submit();
+              });
+            }
+          });
+        </script>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Roles Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <% @roles.each do |role| %>
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
+        <!-- Role Header -->
+        <div class="p-6 border-b border-gray-100">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-lg font-semibold text-gray-900"><%= role.name.humanize %></h3>
+            <div class="flex items-center space-x-2">
+              <% if role.active? %>
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  ✅ Activo
+                </span>
+              <% else %>
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                  🚫 Inactivo
+                </span>
+              <% end %>
+            </div>
+          </div>
+          
+          <% if role.description.present? %>
+            <p class="text-sm text-gray-600 mb-3"><%= role.description %></p>
+          <% end %>
+          
+          <!-- Stats -->
+          <div class="flex items-center justify-between text-sm text-gray-500">
+            <span><%= role.users_count %> usuarios</span>
+            <span><%= role.permissions_count %> permisos</span>
+          </div>
+        </div>
+
+        <!-- Permissions Preview -->
+        <div class="p-6 border-b border-gray-100">
+          <h4 class="text-sm font-medium text-gray-900 mb-3">Permisos Destacados</h4>
+          <% if role.permissions.any? %>
+            <div class="flex flex-wrap gap-1">
+              <% role.permissions.limit(4).each do |permission| %>
+                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                  <%= permission.display_name %>
+                </span>
+              <% end %>
+              <% if role.permissions.count > 4 %>
+                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                  +<%= role.permissions.count - 4 %> más
+                </span>
+              <% end %>
+            </div>
+          <% else %>
+            <p class="text-sm text-gray-500 italic">Sin permisos asignados</p>
+          <% end %>
+        </div>
+
+        <!-- Users Preview -->
+        <div class="p-6 border-b border-gray-100">
+          <h4 class="text-sm font-medium text-gray-900 mb-3">Usuarios con este Rol</h4>
+          <% if role.users.active.any? %>
+            <div class="flex -space-x-2">
+              <% role.users.active.limit(3).each do |user| %>
+                <div class="w-8 h-8 bg-wine-primary rounded-full flex items-center justify-center border-2 border-white" title="<%= user.full_name %>">
+                  <span class="text-white text-xs font-medium">
+                    <%= user.first_name[0]&.upcase %><%= user.last_name[0]&.upcase %>
+                  </span>
+                </div>
+              <% end %>
+              <% if role.users.active.count > 3 %>
+                <div class="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center border-2 border-white">
+                  <span class="text-white text-xs font-medium">
+                    +<%= role.users.active.count - 3 %>
+                  </span>
+                </div>
+              <% end %>
+            </div>
+          <% else %>
+            <p class="text-sm text-gray-500 italic">Sin usuarios asignados</p>
+          <% end %>
+        </div>
+
+        <!-- Actions -->
+        <div class="p-6">
+          <div class="flex items-center justify-between">
+            <div class="flex space-x-2">
+              <%= link_to admin_role_path(role), 
+                  class: "text-wine-primary hover:text-wine-secondary transition-colors",
+                  title: "Ver detalles" do %>
+                👁️
+              <% end %>
+              
+              <%= link_to edit_admin_role_path(role), 
+                  class: "text-blue-600 hover:text-blue-800 transition-colors",
+                  title: "Editar" do %>
+                ✏️
+              <% end %>
+              
+              <%= link_to manage_permissions_admin_role_path(role), 
+                  class: "text-purple-600 hover:text-purple-800 transition-colors",
+                  title: "Gestionar permisos" do %>
+                🔐
+              <% end %>
+            </div>
+            
+            <div class="flex space-x-2">
+              <% if role.active? %>
+                <%= link_to deactivate_admin_role_path(role), 
+                    method: :patch,
+                    data: { confirm: "¿Estás seguro de desactivar este rol?" },
+                    class: "text-yellow-600 hover:text-yellow-800 transition-colors",
+                    title: "Desactivar" do %>
+                  🚫
+                <% end %>
+              <% else %>
+                <%= link_to activate_admin_role_path(role), 
+                    method: :patch,
+                    class: "text-green-600 hover:text-green-800 transition-colors",
+                    title: "Activar" do %>
+                  ✅
+                <% end %>
+              <% end %>
+              
+              <% if role.users.empty? %>
+                <%= link_to admin_role_path(role), 
+                    method: :delete,
+                    data: { confirm: "¿Estás seguro de eliminar este rol? Esta acción no se puede deshacer." },
+                    class: "text-red-600 hover:text-red-800 transition-colors",
+                    title: "Eliminar" do %>
+                  🗑️
+                <% end %>
+              <% else %>
+                <span class="text-gray-400" title="No se puede eliminar: tiene usuarios asignados">🗑️</span>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <% if @roles.empty? %>
+    <div class="bg-white rounded-lg shadow-sm p-12 text-center">
+      <div class="text-gray-400 text-6xl mb-4">🔐</div>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">No se encontraron roles</h3>
+      <p class="text-gray-500 mb-6">
+        <% if params[:search].present? %>
+          No hay roles que coincidan con tu búsqueda.
+        <% else %>
+          Aún no hay roles configurados en el sistema.
+        <% end %>
+      </p>
+      <%= link_to new_admin_role_path, 
+          class: "inline-flex items-center px-6 py-3 bg-wine-primary text-white font-semibold rounded-lg hover:bg-wine-secondary transition-colors" do %>
+        <span class="mr-2">+</span>
+        Crear Primer Rol
+      <% end %>
+    </div>
+  <% end %>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+            <span class="text-purple-600 text-lg">🔐</span>
+          </div>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dl>
+            <dt class="text-sm font-medium text-gray-500 truncate">Total Roles</dt>
+            <dd class="text-lg font-medium text-gray-900"><%= Role.count %></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+            <span class="text-green-600 text-lg">✅</span>
+          </div>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dl>
+            <dt class="text-sm font-medium text-gray-500 truncate">Roles Activos</dt>
+            <dd class="text-lg font-medium text-gray-900"><%= Role.active.count %></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+            <span class="text-blue-600 text-lg">🛡️</span>
+          </div>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dl>
+            <dt class="text-sm font-medium text-gray-500 truncate">Total Permisos</dt>
+            <dd class="text-lg font-medium text-gray-900"><%= Permission.count %></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+            <span class="text-yellow-600 text-lg">👥</span>
+          </div>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dl>
+            <dt class="text-sm font-medium text-gray-500 truncate">Usuarios con Roles</dt>
+            <dd class="text-lg font-medium text-gray-900"><%= User.joins(:roles).distinct.count %></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,468 @@
+<% content_for :page_title, "Gestión de Vacaciones" %>
+
+<div class="vacation-management">
+  <!-- Header con estadísticas -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">👥</div>
+      <div class="stat-content">
+        <h3>Total Empleados</h3>
+        <p class="stat-number"><%= @vacation_stats[:total_employees] %></p>
+      </div>
+    </div>
+    
+    <div class="stat-card vacation-current">
+      <div class="stat-icon">🏖️</div>
+      <div class="stat-content">
+        <h3>De Vacaciones Ahora</h3>
+        <p class="stat-number"><%= @vacation_stats[:on_vacation_now] %></p>
+      </div>
+    </div>
+    
+    <div class="stat-card vacation-upcoming">
+      <div class="stat-icon">📅</div>
+      <div class="stat-content">
+        <h3>Próximas (30 días)</h3>
+        <p class="stat-number"><%= @vacation_stats[:upcoming_30_days] %></p>
+      </div>
+    </div>
+    
+    <div class="stat-card vacation-expired">
+      <div class="stat-icon">⚠️</div>
+      <div class="stat-content">
+        <h3>Vacaciones Vencidas</h3>
+        <p class="stat-number"><%= @vacation_stats[:expired_count] %></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Acciones rápidas -->
+  <div class="actions-bar">
+    <h2>🎯 Acciones Rápidas</h2>
+    <div class="action-buttons">
+      <%= link_to calendar_admin_vacations_path, class: "btn btn-primary" do %>
+        📅 Ver Calendario
+      <% end %>
+      
+      <% if @vacation_stats[:expired_count] > 0 %>
+        <%= form_with url: bulk_update_admin_vacations_path, method: :patch, local: true, style: "display: inline;" do |form| %>
+          <%= form.hidden_field :mark_expired_as_taken, value: true %>
+          <%= form.submit "✅ Actualizar Vencidas", 
+              class: "btn btn-warning",
+              confirm: "¿Marcar #{@vacation_stats[:expired_count]} vacaciones vencidas como tomadas?" %>
+        <% end %>
+      <% end %>
+      
+      <%= link_to "/admin/reports/new?type=vacation_report", class: "btn btn-secondary" do %>
+        📊 Generar Reporte
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Empleados actualmente de vacaciones -->
+  <div class="vacation-section">
+    <h2>🏖️ Empleados Actualmente de Vacaciones</h2>
+    <% if @current_vacations.any? %>
+      <div class="vacation-cards">
+        <% @current_vacations.each do |employee| %>
+          <div class="vacation-card current">
+            <div class="employee-info">
+              <h3><%= employee.names %> <%= employee.surnames %></h3>
+              <p class="employee-id">CI: <%= employee.identification_number %></p>
+            </div>
+            <div class="vacation-details">
+              <p class="vacation-date">
+                📅 Desde: <%= employee.vacation_date&.strftime('%d/%m/%Y') %>
+              </p>
+              <p class="days-info">
+                <% days_passed = (Date.current - employee.vacation_date).to_i %>
+                <% if days_passed > 0 %>
+                  🕐 Lleva <%= days_passed %> día<%= 's' if days_passed != 1 %>
+                <% elsif days_passed == 0 %>
+                  🆕 Empezó hoy
+                <% else %>
+                  ⏰ Empieza en <%= days_passed.abs %> día<%= 's' if days_passed.abs != 1 %>
+                <% end %>
+              </p>
+            </div>
+            <div class="vacation-actions">
+              <%= link_to admin_vacation_path(employee), class: "btn-small btn-info" do %>
+                👁️ Ver
+              <% end %>
+              <%= link_to edit_admin_vacation_path(employee), class: "btn-small btn-primary" do %>
+                ✏️ Editar
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="empty-state">
+        <div class="empty-icon">🏢</div>
+        <p>No hay empleados de vacaciones actualmente</p>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Próximas vacaciones -->
+  <div class="vacation-section">
+    <h2>📅 Próximas Vacaciones</h2>
+    <% if @upcoming_vacations.any? %>
+      <div class="vacation-list">
+        <% @upcoming_vacations.each do |employee| %>
+          <div class="vacation-row upcoming">
+            <div class="employee-basic">
+              <span class="employee-name"><%= employee.names %> <%= employee.surnames %></span>
+              <span class="employee-id">CI: <%= employee.identification_number %></span>
+            </div>
+            <div class="vacation-timing">
+              <span class="vacation-date">📅 <%= employee.vacation_date&.strftime('%d/%m/%Y') %></span>
+              <span class="days-until">
+                <% days_until = (employee.vacation_date - Date.current).to_i %>
+                ⏰ En <%= days_until %> día<%= 's' if days_until != 1 %>
+              </span>
+            </div>
+            <div class="row-actions">
+              <%= link_to edit_admin_vacation_path(employee), class: "btn-small btn-outline" do %>
+                ✏️
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="empty-state">
+        <div class="empty-icon">📅</div>
+        <p>No hay vacaciones programadas próximamente</p>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Vacaciones vencidas -->
+  <% if @expired_vacations.any? %>
+    <div class="vacation-section">
+      <h2>⚠️ Vacaciones Vencidas</h2>
+      <div class="vacation-list">
+        <% @expired_vacations.limit(10).each do |employee| %>
+          <div class="vacation-row expired">
+            <div class="employee-basic">
+              <span class="employee-name"><%= employee.names %> <%= employee.surnames %></span>
+              <span class="employee-id">CI: <%= employee.identification_number %></span>
+            </div>
+            <div class="vacation-timing">
+              <span class="vacation-date">📅 <%= employee.vacation_date&.strftime('%d/%m/%Y') %></span>
+              <span class="days-expired">
+                <% days_expired = (Date.current - employee.vacation_date).to_i %>
+                ⚠️ Vencida hace <%= days_expired %> día<%= 's' if days_expired != 1 %>
+              </span>
+            </div>
+            <div class="row-actions">
+              <%= link_to edit_admin_vacation_path(employee), class: "btn-small btn-warning" do %>
+                🔄 Actualizar
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+        
+        <% if @expired_vacations.count > 10 %>
+          <div class="show-more">
+            <p>Y <%= @expired_vacations.count - 10 %> más...</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<style>
+  :root {
+    --red-primary: #dc2626;
+    --red-secondary: #b91c1c;
+    --gray-lead: #4a5568;
+    --gray-lead-light: #718096;
+    --gray-lead-dark: #2d3748;
+    --white: #ffffff;
+    --green: #10b981;
+    --yellow: #f59e0b;
+    --blue: #3b82f6;
+  }
+
+  .vacation-management {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .stat-card {
+    background: var(--white);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .stat-icon {
+    font-size: 2.5rem;
+    flex-shrink: 0;
+  }
+
+  .stat-content h3 {
+    font-size: 0.9rem;
+    color: var(--gray-lead);
+    margin: 0 0 0.5rem 0;
+    font-weight: 600;
+  }
+
+  .stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--gray-lead-dark);
+  }
+
+  .vacation-current .stat-number { color: var(--green); }
+  .vacation-upcoming .stat-number { color: var(--blue); }
+  .vacation-expired .stat-number { color: var(--red-primary); }
+
+  .actions-bar {
+    background: var(--white);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+  }
+
+  .actions-bar h2 {
+    margin: 0 0 1rem 0;
+    color: var(--gray-lead-dark);
+    font-size: 1.2rem;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-primary {
+    background: var(--red-primary);
+    color: var(--white);
+  }
+
+  .btn-primary:hover {
+    background: var(--red-secondary);
+    transform: translateY(-2px);
+  }
+
+  .btn-secondary {
+    background: var(--gray-lead);
+    color: var(--white);
+  }
+
+  .btn-warning {
+    background: var(--yellow);
+    color: var(--white);
+  }
+
+  .vacation-section {
+    background: var(--white);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+  }
+
+  .vacation-section h2 {
+    margin: 0 0 1.5rem 0;
+    color: var(--gray-lead-dark);
+    font-size: 1.3rem;
+    border-bottom: 2px solid #f3f4f6;
+    padding-bottom: 0.5rem;
+  }
+
+  .vacation-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1rem;
+  }
+
+  .vacation-card {
+    background: #f8fafc;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 1rem;
+    transition: all 0.3s ease;
+  }
+
+  .vacation-card:hover {
+    border-color: var(--red-primary);
+    transform: translateY(-2px);
+  }
+
+  .vacation-card.current {
+    border-color: var(--green);
+    background: #f0fdf4;
+  }
+
+  .employee-info h3 {
+    margin: 0 0 0.25rem 0;
+    color: var(--gray-lead-dark);
+    font-size: 1.1rem;
+  }
+
+  .employee-id {
+    color: var(--gray-lead);
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  .vacation-details {
+    margin: 0.75rem 0;
+  }
+
+  .vacation-date, .days-info {
+    margin: 0.25rem 0;
+    font-size: 0.9rem;
+    color: var(--gray-lead);
+  }
+
+  .vacation-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .btn-small {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .btn-info {
+    background: var(--blue);
+    color: var(--white);
+  }
+
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--gray-lead);
+    color: var(--gray-lead);
+  }
+
+  .vacation-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .vacation-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border-left: 4px solid #e5e7eb;
+  }
+
+  .vacation-row.upcoming {
+    border-left-color: var(--blue);
+  }
+
+  .vacation-row.expired {
+    border-left-color: var(--red-primary);
+    background: #fef2f2;
+  }
+
+  .employee-basic {
+    flex: 1;
+  }
+
+  .employee-name {
+    font-weight: 600;
+    color: var(--gray-lead-dark);
+    display: block;
+  }
+
+  .vacation-timing {
+    flex: 1;
+    text-align: center;
+  }
+
+  .vacation-date, .days-until, .days-expired {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--gray-lead);
+  }
+
+  .days-expired {
+    color: var(--red-primary);
+    font-weight: 600;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--gray-lead);
+  }
+
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+  }
+
+  .show-more {
+    text-align: center;
+    padding: 1rem;
+    color: var(--gray-lead);
+    font-style: italic;
+  }
+
+  @media (max-width: 768px) {
+    .vacation-management {
+      padding: 1rem;
+    }
+    
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .vacation-cards {
+      grid-template-columns: 1fr;
+    }
+    
+    .vacation-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    
+    .action-buttons {
+      flex-direction: column;
+    }
+  }
+</style>

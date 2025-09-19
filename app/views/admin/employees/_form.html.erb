@@ -38,6 +38,21 @@
         <%= form.label :home_address, "Dirección de Habitación", class: "block text-gray-700 font-semibold mb-2" %>
         <%= form.text_area :home_address, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", rows: 3, placeholder: "Av. Principal #123, Caracas" %>
       </div>
+
+      <div>
+        <%= form.label :email, "Correo Electrónico", class: "block text-gray-700 font-semibold mb-2" %>
+        <%= form.email_field :email, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", placeholder: "empleado@empresa.com" %>
+      </div>
+
+      <div>
+        <%= form.label :phone_number, "Número de Teléfono", class: "block text-gray-700 font-semibold mb-2" %>
+        <%= form.text_field :phone_number, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", placeholder: "+58 412 123 4567" %>
+      </div>
+
+      <div>
+        <%= form.label :voting_center, "Centro de Votación", class: "block text-gray-700 font-semibold mb-2" %>
+        <%= form.text_field :voting_center, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", placeholder: "Escuela Básica Nacional" %>
+      </div>
     </div>
   </div>
 
@@ -56,6 +71,16 @@
       </div>
 
       <div>
+        <%= form.label :position, "Cargo", class: "block text-gray-700 font-semibold mb-2" %>
+        <%= form.text_field :position, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", placeholder: "Operador Integral" %>
+      </div>
+
+      <div>
+        <%= form.label :code, "Código", class: "block text-gray-700 font-semibold mb-2" %>
+        <%= form.text_field :code, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", placeholder: "EMP001" %>
+      </div>
+
+      <div>
         <%= form.label :vacation_date, "Fecha de Vacaciones", class: "block text-gray-700 font-semibold mb-2" %>
         <%= form.date_field :vacation_date, 
                            class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors",
@@ -63,10 +88,8 @@
         <p class="text-sm text-gray-500 mt-1">Se calcula automáticamente (1 año después del ingreso)</p>
       </div>
 
-      <div>
-        <%= form.label :expired_vacations, "Vacaciones Vencidas", class: "block text-gray-700 font-semibold mb-2" %>
-        <%= form.number_field :expired_vacations, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", min: 0, placeholder: "0" %>
-      </div>
+
+
 
       <div>
         <%= form.label :active, "Estado", class: "block text-gray-700 font-semibold mb-2" %>
@@ -160,6 +183,7 @@
             <button type="button" class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors" data-action="nested-forms#remove">Eliminar</button>
           </div>
           
+          <%= account_form.hidden_field :id if account_form.object.persisted? %>
           <%= account_form.hidden_field :_destroy, class: "destroy-field" %>
           
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -288,6 +312,7 @@
             <button type="button" class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors" data-action="nested-forms#remove">Eliminar</button>
           </div>
           
+          <%= family_form.hidden_field :id if family_form.object.persisted? %>
           <%= family_form.hidden_field :_destroy, class: "destroy-field" %>
           
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -302,35 +327,37 @@
             </div>
 
             <div>
-              <%= family_form.label :relationship, "Parentesco", class: "block text-gray-700 font-semibold mb-2" %>
-              <%= family_form.select :relationship, 
-                                    options_for_select([
-                                      ['Hijo', 'son'], 
-                                      ['Hija', 'daughter'], 
-                                      ['Cónyuge', 'spouse'], 
-                                      ['Padre', 'father'], 
-                                      ['Madre', 'mother'], 
-                                      ['Hermano', 'brother'], 
-                                      ['Hermana', 'sister']
-                                    ], family_form.object.relationship), 
-                                    { prompt: "Seleccione parentesco" }, 
+              <%= family_form.label :gender, "Sexo", class: "block text-gray-700 font-semibold mb-2" %>
+              <%= family_form.select :gender, 
+                                    FamilyMember.gender_options, 
+                                    { prompt: "Seleccione sexo" }, 
                                     { class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors" } %>
             </div>
 
             <div>
               <%= family_form.label :education_level, "Grado de Instrucción", class: "block text-gray-700 font-semibold mb-2" %>
               <%= family_form.select :education_level, 
-                                    options_for_select([
-                                      ['Preescolar', 'preschool'], 
-                                      ['Primaria', 'primary'], 
-                                      ['Secundaria', 'secondary'], 
-                                      ['Bachillerato', 'high_school'], 
-                                      ['Técnico', 'technical'], 
-                                      ['Universitario', 'university'], 
-                                      ['Postgrado', 'graduate']
-                                    ], family_form.object.education_level), 
+                                    FamilyMember.education_level_options, 
                                     { prompt: "Seleccione nivel" }, 
-                                    { class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors" } %>
+                                    { class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", 
+                                      "data-action": "change->nested-forms#toggleSpecificGrade" } %>
+            </div>
+            
+            <!-- Campo dinámico para grado específico -->
+            <div class="specific-grade-field" style="<%= family_form.object.requires_specific_grade? ? 'display: block;' : 'display: none;' %>">
+              <%= family_form.label :specific_grade, "Grado Específico", class: "block text-gray-700 font-semibold mb-2" %>
+              <% 
+                options = []
+                if family_form.object.education_level == 'primaria'
+                  options = FamilyMember.primary_grade_options
+                elsif family_form.object.education_level == 'secundaria'
+                  options = FamilyMember.secondary_grade_options
+                end
+              %>
+              <%= family_form.select :specific_grade, 
+                                    options_for_select(options, family_form.object.specific_grade), 
+                                    { prompt: "Seleccione grado" }, 
+                                    { class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors specific-grade-select" } %>
             </div>
           </div>
         </div>
@@ -361,32 +388,38 @@
           </div>
 
           <div>
-            <label class="block text-gray-700 font-semibold mb-2">Parentesco</label>
-            <select name="employee[family_members_attributes][NEW_RECORD][relationship]" 
+            <label class="block text-gray-700 font-semibold mb-2">Sexo</label>
+            <select name="employee[family_members_attributes][NEW_RECORD][gender]" 
                     class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors">
-              <option value="">Seleccione parentesco</option>
-              <option value="son">Hijo</option>
-              <option value="daughter">Hija</option>
-              <option value="spouse">Cónyuge</option>
-              <option value="father">Padre</option>
-              <option value="mother">Madre</option>
-              <option value="brother">Hermano</option>
-              <option value="sister">Hermana</option>
+              <option value="">Seleccione sexo</option>
+              <option value="masculino">Masculino</option>
+              <option value="femenino">Femenino</option>
             </select>
           </div>
 
           <div>
-            <label class="block text-gray-700 font-semibold mb-2">Nivel de Instrucción</label>
+            <label class="block text-gray-700 font-semibold mb-2">Grado de Instrucción</label>
             <select name="employee[family_members_attributes][NEW_RECORD][education_level]" 
-                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors">
+                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors"
+                    data-action="change->nested-forms#toggleSpecificGrade">
               <option value="">Seleccione nivel</option>
-              <option value="preschool">Preescolar</option>
-              <option value="primary">Primaria</option>
-              <option value="secondary">Secundaria</option>
-              <option value="high_school">Bachillerato</option>
-              <option value="technical">Técnico</option>
-              <option value="university">Universitario</option>
-              <option value="graduate">Postgrado</option>
+              <option value="maternal">Maternal</option>
+              <option value="preescolar">Preescolar</option>
+              <option value="primaria">Primaria</option>
+              <option value="secundaria">Secundaria</option>
+              <option value="bachillerato">Bachillerato</option>
+              <option value="tecnico">Técnico</option>
+              <option value="universitario">Universitario</option>
+              <option value="postgrado">Postgrado</option>
+            </select>
+          </div>
+          
+          <!-- Campo dinámico para grado específico en template -->
+          <div class="specific-grade-field" style="display: none;">
+            <label class="block text-gray-700 font-semibold mb-2">Grado Específico</label>
+            <select name="employee[family_members_attributes][NEW_RECORD][specific_grade]" 
+                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors specific-grade-select">
+              <option value="">Seleccione grado</option>
             </select>
           </div>
         </div>

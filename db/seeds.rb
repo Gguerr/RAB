@@ -2,7 +2,111 @@
 # development, test). The code here should be idempotent so that it can be executed at any point in every environment.
 # The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
 
-# Crear administrador por defecto
+# Crear permisos por defecto
+puts "🔐 Creando permisos del sistema..."
+Permission.create_default_permissions
+puts "✅ Permisos creados: #{Permission.count}"
+
+# Crear roles por defecto
+puts "\n👔 Creando roles del sistema..."
+
+super_admin_role = Role.find_or_create_by!(name: "super_admin") do |role|
+  role.description = "Administrador supremo con todos los permisos"
+  role.active = true
+end
+
+admin_role = Role.find_or_create_by!(name: "admin") do |role|
+  role.description = "Administrador del sistema con permisos de gestión"
+  role.active = true
+end
+
+manager_role = Role.find_or_create_by!(name: "manager") do |role|
+  role.description = "Gerente con permisos de supervisión"
+  role.active = true
+end
+
+employee_role = Role.find_or_create_by!(name: "employee") do |role|
+  role.description = "Empleado con permisos básicos"
+  role.active = true
+end
+
+viewer_role = Role.find_or_create_by!(name: "viewer") do |role|
+  role.description = "Solo lectura"
+  role.active = true
+end
+
+puts "✅ Roles creados: #{Role.count}"
+
+# Asignar permisos a roles
+puts "\n⚙️ Asignando permisos a roles..."
+
+# Super Admin - todos los permisos
+super_admin_role.permissions = Permission.all
+
+# Admin - casi todos los permisos excepto gestión de super admins
+admin_permissions = Permission.where.not(resource: "super_admin")
+admin_role.permissions = admin_permissions
+
+# Manager - permisos de gestión de empleados y reportes
+manager_permissions = Permission.where(
+  action: %w[read update create],
+  resource: %w[employees dashboard reports]
+)
+manager_role.permissions = manager_permissions
+
+# Employee - solo lectura básica
+employee_permissions = Permission.where(
+  action: "read",
+  resource: %w[dashboard employees]
+)
+employee_role.permissions = employee_permissions
+
+# Viewer - solo lectura
+viewer_permissions = Permission.where(action: "read")
+viewer_role.permissions = viewer_permissions
+
+puts "✅ Permisos asignados a roles"
+
+# Crear usuarios del sistema
+puts "\n👤 Creando usuarios del sistema..."
+
+# Super Admin
+super_admin = User.find_or_create_by!(email: "superadmin@rab.com") do |user|
+  user.first_name = "Super"
+  user.last_name = "Admin"
+  user.password = "123456"
+  user.password_confirmation = "123456"
+  user.active = true
+end
+super_admin.roles << super_admin_role unless super_admin.roles.include?(super_admin_role)
+
+# Admin del sistema
+admin_user = User.find_or_create_by!(email: "admin@rab.com") do |user|
+  user.first_name = "Admin"
+  user.last_name = "Sistema"
+  user.password = "123456"
+  user.password_confirmation = "123456"
+  user.active = true
+end
+admin_user.roles << admin_role unless admin_user.roles.include?(admin_role)
+
+# Manager
+manager_user = User.find_or_create_by!(email: "manager@rab.com") do |user|
+  user.first_name = "Gerente"
+  user.last_name = "Principal"
+  user.password = "123456"
+  user.password_confirmation = "123456"
+  user.active = true
+end
+manager_user.roles << manager_role unless manager_user.roles.include?(manager_role)
+
+puts "✅ Usuarios creados: #{User.count}"
+puts "📧 Credenciales de acceso:"
+puts "   - Super Admin: superadmin@rab.com / 123456"
+puts "   - Admin: admin@rab.com / 123456"
+puts "   - Manager: manager@rab.com / 123456"
+
+# Crear administrador por defecto (mantener compatibilidad)
 admin_email = "admin@rab.com"
 admin_password = "123456"
 
@@ -12,11 +116,9 @@ unless Admin.exists?(email: admin_email)
     password: admin_password,
     password_confirmation: admin_password
   )
-  puts "✅ Administrador creado:"
-  puts "📧 Email: #{admin_email}"
-  puts "🔒 Contraseña: #{admin_password}"
+  puts "✅ Administrador (Admin model) creado para compatibilidad"
 else
-  puts "⚠️  El administrador ya existe con email: #{admin_email}"
+  puts "⚠️  El administrador (Admin model) ya existe"
 end
 
 # Crear empleados de prueba
@@ -130,7 +232,10 @@ puts "✅ Familiares creados: #{FamilyMember.count}"
 
 puts "\n🎉 ¡Seeds completados exitosamente!"
 puts "📊 Resumen:"
-puts "   - Administradores: #{Admin.count}"
+puts "   - Usuarios del sistema: #{User.count}"
+puts "   - Roles: #{Role.count}"
+puts "   - Permisos: #{Permission.count}"
+puts "   - Administradores (compatibilidad): #{Admin.count}"
 puts "   - Empleados: #{Employee.count}"
 puts "   - Cuentas de pago: #{PaymentAccount.count}"
 puts "   - Tallas: #{WorkerSize.count}"

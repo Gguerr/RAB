@@ -1,0 +1,306 @@
+<% content_for :page_title, "Generar Reporte" %>
+
+<div class="max-w-6xl mx-auto space-y-6">
+  <!-- Header -->
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <div class="flex-shrink-0 h-12 w-12">
+          <div class="h-12 w-12 rounded-full bg-wine-primary flex items-center justify-center">
+            <span class="text-white font-bold text-lg">📊</span>
+          </div>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Generar Reporte</h1>
+          <p class="text-gray-600">
+            <% 
+              report_names = {
+                'employees' => 'Empleados',
+                'payment_accounts' => 'Cuentas de Pago',
+                'family' => 'Carga Familiar',
+                'sizes' => 'Tallas de Empleados',
+                'cards' => 'Carnets y Tarjetas',
+                'bank_accounts_detailed' => 'Cuentas Bancarias Detalladas',
+                'family_detailed' => 'Carga Familiar Detallada',
+                'sizes_detailed' => 'Tallas Detalladas',
+                'vacation_report' => 'Empleados en Vacaciones'
+              }
+            %>
+            Configurando reporte de: <strong><%= report_names[@report_type] || @report_type.humanize %></strong>
+          </p>
+        </div>
+      </div>
+      <%= link_to admin_reports_path, 
+          class: "inline-flex items-center px-4 py-2 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 transition-colors" do %>
+        ← Volver a Reportes
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Report Configuration Form -->
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <%= form_with url: generate_admin_reports_path, method: :post, local: true, data: { turbo: false }, class: "space-y-8" do |form| %>
+      <%= form.hidden_field :report_type, value: @report_type %>
+      
+      <!-- Report Type Info -->
+      <div class="bg-blue-50 rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-blue-900 mb-4">📋 Información del Reporte</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div>
+            <dt class="font-medium text-blue-800">Tipo de Reporte</dt>
+            <dd class="text-blue-700"><%= report_names[@report_type] %></dd>
+          </div>
+          <div>
+            <dt class="font-medium text-blue-800">Formato</dt>
+            <dd class="text-blue-700">PDF (Optimizado para A4)</dd>
+          </div>
+          <div>
+            <dt class="font-medium text-blue-800">Incluye</dt>
+            <dd class="text-blue-700">Encabezado institucional, filtros, firmas</dd>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters Section -->
+      <div class="bg-gray-50 rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-6">🔍 Filtros y Configuración</h3>
+        
+        <% if @filters.any? %>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <% @filters.each do |filter_key, filter_config| %>
+              <div>
+                <% 
+                  filter_label = case filter_key.to_s
+                  when 'active'
+                    'Estado'
+                  when 'hire_date_from'
+                    'Fecha de Ingreso (Desde)'
+                  when 'hire_date_to'
+                    'Fecha de Ingreso (Hasta)'
+                  when 'include_photo'
+                    'Incluir Foto'
+                  when 'include_addresses'
+                    'Incluir Direcciones'
+                  when 'include_skills'
+                    'Incluir Habilidades'
+                  when 'include_vacations'
+                    'Incluir Fechas de Vacaciones'
+                  when 'account_type'
+                    'Tipo de Cuenta'
+                  when 'is_primary'
+                    'Cuenta Principal'
+                  when 'bank_name'
+                    'Nombre del Banco'
+                  when 'gender'
+                    'Sexo'
+                  when 'education_level'
+                    'Nivel Educativo'
+                  when 'age_from'
+                    'Edad Mínima'
+                  when 'age_to'
+                    'Edad Máxima'
+                  when 'shirt_size'
+                    'Talla de Camisa'
+                  when 'shoes_size'
+                    'Talla de Zapatos'
+                  when 'pants_size'
+                    'Talla de Pantalón'
+                  when 'card_type'
+                    'Tipo de Carnet'
+                  when 'has_party_card'
+                    'Carnet del Partido'
+                  when 'has_psuv_card'
+                    'Carnet PSUV'
+                  when 'vacation_status'
+                    'Estado de Vacaciones'
+                  when 'employee_id'
+                    'Empleado'
+                  when 'vacation_start_date'
+                    'Fecha de Inicio de Vacaciones'
+                  when 'vacation_end_date'
+                    'Fecha de Fin de Vacaciones'
+                  when 'vacation_days'
+                    'Días de Vacaciones'
+                  when 'expired_vacations'
+                    'Días Vencidos'
+                  when 'vacation_notes'
+                    'Observaciones de Vacaciones'
+                  when 'vacation_type'
+                    'Tipo de Vacaciones'
+                  when 'reason'
+                    'Motivo'
+                  else
+                    filter_key.to_s.humanize
+                  end
+                %>
+                
+                <%= label_tag "filters[#{filter_key}]", filter_label, class: "block text-sm font-medium text-gray-700 mb-2" %>
+                
+                <% if filter_config.is_a?(Array) %>
+                  <!-- Select dropdown -->
+                  <%= select_tag "filters[#{filter_key}]", 
+                      options_for_select(filter_config.map { |option| [option, option] }), 
+                      { include_blank: false, class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wine-primary focus:border-transparent" } %>
+                <% elsif filter_config == 'select_employee' %>
+                  <!-- Employee select dropdown -->
+                  <%= select_tag "filters[#{filter_key}]", 
+                      options_from_collection_for_select(Employee.active.order(:surnames, :names), :id, :full_name), 
+                      { prompt: 'Seleccionar empleado...', class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wine-primary focus:border-transparent" } %>
+                <% elsif filter_config == 'date' %>
+                  <!-- Date input -->
+                  <%= date_field_tag "filters[#{filter_key}]", nil, 
+                      class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wine-primary focus:border-transparent" %>
+                <% elsif filter_config == 'number' %>
+                  <!-- Number input -->
+                  <%= number_field_tag "filters[#{filter_key}]", nil, 
+                      class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wine-primary focus:border-transparent" %>
+                <% elsif filter_config == 'boolean' %>
+                  <!-- Checkbox -->
+                  <div class="flex items-center">
+                    <%= check_box_tag "filters[#{filter_key}]", "1", false, 
+                        class: "h-4 w-4 text-wine-primary focus:ring-wine-primary border-gray-300 rounded" %>
+                    <span class="ml-2 text-sm text-gray-600">Sí, incluir en el reporte</span>
+                  </div>
+                <% else %>
+                  <!-- Text input -->
+                  <%= text_field_tag "filters[#{filter_key}]", nil, 
+                      placeholder: "Escribir filtro...",
+                      class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-wine-primary focus:border-transparent" %>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="text-center py-8">
+            <div class="text-gray-400 text-4xl mb-2">🔍</div>
+            <p class="text-gray-500">Este tipo de reporte no tiene filtros configurables.</p>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Report Preview -->
+      <div class="bg-yellow-50 rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-yellow-900 mb-4">👁️ Vista Previa del Reporte</h3>
+        <div class="text-sm text-yellow-700 space-y-2">
+          <p><strong>Estructura del PDF:</strong></p>
+          <ul class="list-disc list-inside space-y-1 ml-4">
+            <li>Encabezado institucional con logo y datos oficiales</li>
+            <li>Título del reporte y fecha de generación</li>
+            <li>Resumen de filtros aplicados</li>
+            <li>Tabla de datos con formato profesional</li>
+            <li>Pie de página con firmas y numeración</li>
+          </ul>
+          
+          <div class="mt-4 p-3 bg-white rounded border-l-4 border-yellow-400">
+            <p class="font-medium">📄 El archivo PDF incluirá el encabezado oficial de ENCABEZADO.xlsx</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center justify-between pt-6 border-t border-gray-200">
+        <div class="flex items-center space-x-4">
+          <%= link_to admin_reports_path, 
+              class: "px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors" do %>
+            Cancelar
+          <% end %>
+          
+          <button type="button" 
+                  onclick="previewReport()"
+                  class="px-6 py-3 border border-blue-300 text-blue-700 font-medium rounded-lg hover:bg-blue-50 transition-colors">
+            Vista Previa
+          </button>
+        </div>
+        
+        <div class="flex items-center space-x-4">
+          <!-- Generate Report Button -->
+          <%= form.submit "📄 Generar PDF", 
+              class: "inline-flex items-center px-6 py-3 bg-wine-primary text-white font-medium rounded-lg hover:bg-wine-secondary transition-colors cursor-pointer" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Help Section -->
+  <div class="bg-gray-50 rounded-lg p-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">💡 Ayuda y Consejos</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-700">
+      <div>
+        <h4 class="font-medium mb-2">🎯 Uso de Filtros</h4>
+        <ul class="space-y-1">
+          <li>• <strong>Fechas:</strong> Usa formato DD/MM/AAAA para filtrar por períodos</li>
+          <li>• <strong>Estados:</strong> "Todos" incluye activos e inactivos</li>
+          <li>• <strong>Números:</strong> Usa rangos para filtrar edades o tallas</li>
+          <li>• <strong>Texto:</strong> Busca coincidencias parciales (no sensible a mayúsculas)</li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="font-medium mb-2">📋 Contenido del Reporte</h4>
+        <ul class="space-y-1">
+          <li>• <strong>Encabezado:</strong> Logo institucional y datos oficiales</li>
+          <li>• <strong>Filtros:</strong> Resumen de criterios aplicados</li>
+          <li>• <strong>Datos:</strong> Tabla optimizada para impresión</li>
+          <li>• <strong>Firmas:</strong> Espacios para elaborado y revisado</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function previewReport() {
+    const reportType = document.querySelector('input[name="report_type"]').value;
+    const reportNames = {
+      'employees': 'Empleados',
+      'payment_accounts': 'Cuentas de Pago',
+      'family': 'Carga Familiar',
+      'sizes': 'Tallas de Empleados',
+      'cards': 'Carnets y Tarjetas'
+    };
+    
+    // Obtener filtros seleccionados
+    const filters = [];
+    document.querySelectorAll('[name^="filters"]').forEach(input => {
+      if (input.value && input.value !== 'Todos' && input.value !== 'Todas') {
+        const label = document.querySelector(`label[for="${input.id}"]`)?.textContent || input.name;
+        filters.push(`${label}: ${input.value}`);
+      }
+    });
+    
+    let message = `📊 VISTA PREVIA DEL REPORTE\n\n`;
+    message += `Tipo: ${reportNames[reportType]}\n`;
+    message += `Formato: PDF\n`;
+    message += `Fecha: ${new Date().toLocaleDateString('es-ES')}\n\n`;
+    
+    if (filters.length > 0) {
+      message += `FILTROS APLICADOS:\n${filters.join('\n')}\n\n`;
+    }
+    
+    message += `El reporte incluirá:\n`;
+    message += `✓ Encabezado institucional\n`;
+    message += `✓ Filtros aplicados\n`;
+    message += `✓ Datos en formato tabla\n`;
+    message += `✓ Numeración de páginas\n`;
+    message += `✓ Espacios para firmas`;
+    
+    alert(message);
+  }
+  
+  // Auto-save form data
+  document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const inputs = form.querySelectorAll('input, select');
+    
+    inputs.forEach(input => {
+      input.addEventListener('change', function() {
+        localStorage.setItem(`report_filter_${this.name}`, this.value);
+      });
+      
+      // Restore saved values
+      const savedValue = localStorage.getItem(`report_filter_${input.name}`);
+      if (savedValue && savedValue !== 'null') {
+        input.value = savedValue;
+      }
+    });
+  });
+</script>

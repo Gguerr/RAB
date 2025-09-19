@@ -1,0 +1,421 @@
+<% content_for :page_title, "Calendario de Vacaciones" %>
+
+<div class="vacation-calendar">
+  <div class="calendar-header">
+    <div class="month-navigation">
+      <%= link_to calendar_admin_vacations_path(month: (@month - 1.month).strftime('%Y-%m-01')), 
+          class: "nav-btn" do %>
+        ← Mes Anterior
+      <% end %>
+      
+      <h1 class="current-month">
+        📅 <%= @month.strftime('%B %Y').capitalize %>
+      </h1>
+      
+      <%= link_to calendar_admin_vacations_path(month: (@month + 1.month).strftime('%Y-%m-01')), 
+          class: "nav-btn" do %>
+        Mes Siguiente →
+      <% end %>
+    </div>
+    
+    <div class="calendar-actions">
+      <%= link_to admin_vacations_path, class: "btn btn-secondary" do %>
+        ← Volver a Gestión
+      <% end %>
+    </div>
+  </div>
+
+  <div class="calendar-grid">
+    <div class="calendar-weekdays">
+      <div class="weekday">Dom</div>
+      <div class="weekday">Lun</div>
+      <div class="weekday">Mar</div>
+      <div class="weekday">Mié</div>
+      <div class="weekday">Jue</div>
+      <div class="weekday">Vie</div>
+      <div class="weekday">Sáb</div>
+    </div>
+
+    <div class="calendar-days">
+      <% start_date = @month.beginning_of_month.beginning_of_week %>
+      <% end_date = @month.end_of_month.end_of_week %>
+      
+      <% (start_date..end_date).each do |day| %>
+        <% date_key = day.strftime('%Y-%m-%d') %>
+        <% employees_on_day = @employees_by_date[date_key] || [] %>
+        <% is_current_month = day.month == @month.month %>
+        <% is_today = day == Date.current %>
+        
+        <div class="calendar-day <%= 'other-month' unless is_current_month %> <%= 'today' if is_today %> <%= 'has-vacations' if employees_on_day.any? %>">
+          <div class="day-number"><%= day.day %></div>
+          
+          <% if employees_on_day.any? && is_current_month %>
+            <div class="day-vacations">
+              <% employees_on_day.each do |employee| %>
+                <div class="vacation-item" title="<%= employee.full_name %>">
+                  🏖️ <%= employee.names.split.first %>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="calendar-legend">
+    <h3>📋 Leyenda</h3>
+    <div class="legend-items">
+      <div class="legend-item">
+        <div class="legend-color today"></div>
+        <span>Hoy</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color has-vacations"></div>
+        <span>Días con vacaciones</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color other-month"></div>
+        <span>Otros meses</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resumen del mes -->
+  <div class="month-summary">
+    <h3>📊 Resumen de <%= @month.strftime('%B %Y').capitalize %></h3>
+    <div class="summary-stats">
+      <div class="summary-item">
+        <span class="summary-label">Total días con vacaciones:</span>
+        <span class="summary-value"><%= @employees_by_date.keys.count %></span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Empleados únicos:</span>
+        <span class="summary-value">
+          <%= @employees_by_date.values.flatten.map(&:id).uniq.count %>
+        </span>
+      </div>
+    </div>
+    
+    <% if @employees_by_date.any? %>
+      <div class="month-employees">
+        <h4>Empleados de vacaciones este mes:</h4>
+        <div class="employee-chips">
+          <% @employees_by_date.values.flatten.uniq.each do |employee| %>
+            <div class="employee-chip">
+              <span class="employee-name"><%= employee.full_name %></span>
+              <span class="employee-date">
+                <%= @employees_by_date.find { |date, emps| emps.include?(employee) }.first %>
+              </span>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<style>
+  :root {
+    --red-primary: #dc2626;
+    --red-secondary: #b91c1c;
+    --gray-lead: #4a5568;
+    --gray-lead-light: #718096;
+    --gray-lead-dark: #2d3748;
+    --white: #ffffff;
+    --green: #10b981;
+    --yellow: #f59e0b;
+    --blue: #3b82f6;
+  }
+
+  .vacation-calendar {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .calendar-header {
+    background: var(--white);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .month-navigation {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .nav-btn {
+    padding: 0.75rem 1.5rem;
+    background: var(--gray-lead);
+    color: var(--white);
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  .nav-btn:hover {
+    background: var(--gray-lead-dark);
+    transform: translateY(-2px);
+  }
+
+  .current-month {
+    margin: 0;
+    color: var(--gray-lead-dark);
+    font-size: 1.5rem;
+    text-align: center;
+  }
+
+  .btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+  }
+
+  .btn-secondary {
+    background: var(--gray-lead);
+    color: var(--white);
+  }
+
+  .calendar-grid {
+    background: var(--white);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+
+  .calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: var(--gray-lead);
+  }
+
+  .weekday {
+    padding: 1rem;
+    text-align: center;
+    color: var(--white);
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  .calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+  }
+
+  .calendar-day {
+    min-height: 120px;
+    border: 1px solid #e5e7eb;
+    padding: 0.5rem;
+    position: relative;
+    background: var(--white);
+    transition: all 0.3s ease;
+  }
+
+  .calendar-day:hover {
+    background: #f8fafc;
+  }
+
+  .calendar-day.other-month {
+    background: #f9fafb;
+    color: #9ca3af;
+  }
+
+  .calendar-day.today {
+    background: #fef3c7;
+    border-color: var(--yellow);
+    font-weight: 700;
+  }
+
+  .calendar-day.has-vacations {
+    background: #ecfdf5;
+    border-color: var(--green);
+  }
+
+  .calendar-day.has-vacations.today {
+    background: #d1fae5;
+  }
+
+  .day-number {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--gray-lead-dark);
+  }
+
+  .other-month .day-number {
+    color: #9ca3af;
+  }
+
+  .day-vacations {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .vacation-item {
+    background: var(--green);
+    color: var(--white);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .calendar-legend, .month-summary {
+    background: var(--white);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1rem;
+  }
+
+  .calendar-legend h3, .month-summary h3 {
+    margin: 0 0 1rem 0;
+    color: var(--gray-lead-dark);
+    font-size: 1.1rem;
+  }
+
+  .legend-items {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 1px solid #e5e7eb;
+  }
+
+  .legend-color.today {
+    background: #fef3c7;
+    border-color: var(--yellow);
+  }
+
+  .legend-color.has-vacations {
+    background: #ecfdf5;
+    border-color: var(--green);
+  }
+
+  .legend-color.other-month {
+    background: #f9fafb;
+    border-color: #9ca3af;
+  }
+
+  .summary-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border-left: 4px solid var(--red-primary);
+  }
+
+  .summary-label {
+    color: var(--gray-lead);
+    font-weight: 500;
+  }
+
+  .summary-value {
+    color: var(--gray-lead-dark);
+    font-weight: 700;
+  }
+
+  .month-employees h4 {
+    margin: 0 0 1rem 0;
+    color: var(--gray-lead-dark);
+  }
+
+  .employee-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .employee-chip {
+    background: var(--red-primary);
+    color: var(--white);
+    padding: 0.5rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .employee-date {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.2rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
+  }
+
+  @media (max-width: 1024px) {
+    .calendar-header {
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .month-navigation {
+      flex-direction: column;
+      gap: 1rem;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .vacation-calendar {
+      padding: 1rem;
+    }
+
+    .calendar-day {
+      min-height: 80px;
+      padding: 0.25rem;
+    }
+
+    .vacation-item {
+      font-size: 0.6rem;
+      padding: 0.2rem 0.3rem;
+    }
+
+    .legend-items {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .summary-stats {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+
