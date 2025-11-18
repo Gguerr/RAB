@@ -96,6 +96,17 @@
         </span>
       </div>
       
+      <div class="detail-item">
+        <label>Ubicación de Trabajo</label>
+        <span class="detail-value">
+          <% if @employee.work_location.present? %>
+            <%= @employee.work_location.capitalize %>
+          <% else %>
+            No especificada
+          <% end %>
+        </span>
+      </div>
+      
       <div class="detail-item full-width">
         <label>Habilidades y Destrezas</label>
         <span class="detail-value"><%= @employee.skills_abilities || "No especificadas" %></span>

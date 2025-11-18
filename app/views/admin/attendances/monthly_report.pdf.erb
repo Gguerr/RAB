@@ -1,0 +1,82 @@
+<div class="pdf-container">
+  <!-- Header -->
+  <div class="pdf-header">
+    <h1 class="pdf-title">REPORTE DE ASISTENCIA MENSUAL</h1>
+    <div class="header-info">
+      <p><strong>Período:</strong> <%= Date::MONTHNAMES[@month] %> <%= @year %></p>
+      <p><strong>Empresa:</strong> RAB</p>
+      <p><strong>Generado:</strong> <%= Time.current.strftime("%d/%m/%Y %H:%M") %></p>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="pdf-summary">
+    <h2>Resumen del Mes</h2>
+    <div class="summary-grid">
+      <div class="summary-item">
+        <strong>Total Días:</strong> <%= @summary[:total_days] %>
+      </div>
+      <div class="summary-item">
+        <strong>Días Presentes:</strong> <%= @summary[:present_days] %>
+      </div>
+      <div class="summary-item">
+        <strong>Días Ausentes:</strong> <%= @summary[:absent_days] %>
+      </div>
+      <div class="summary-item">
+        <strong>% Asistencia:</strong> <%= @summary[:attendance_rate] %>%
+      </div>
+    </div>
+  </div>
+
+  <!-- Monthly Breakdown -->
+  <h2>Resumen por Día</h2>
+  <table class="pdf-table">
+    <thead>
+      <tr>
+        <th style="width: 10%;">Día</th>
+        <th style="width: 15%;">Presentes</th>
+        <th style="width: 15%;">Ausentes</th>
+        <th style="width: 15%;">Total</th>
+        <th style="width: 15%;">% Asistencia</th>
+        <th style="width: 30%;">Observaciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% (1..Date.new(@year, @month, -1).day).each do |day| %>
+        <% date = Date.new(@year, @month, day) %>
+        <% day_attendances = @attendances.select { |a| a.attendance_date == date } %>
+        <% present_count = day_attendances.count { |a| a.present? } %>
+        <% absent_count = day_attendances.count { |a| !a.present? } %>
+        <% total_count = day_attendances.count %>
+        <% attendance_rate = total_count > 0 ? (present_count.to_f / total_count * 100).round(2) : 0 %>
+        
+        <tr class="<%= day.odd? ? 'odd' : 'even' %>">
+          <td style="text-align: center;"><%= day %></td>
+          <td style="text-align: center; color: green;"><%= present_count %></td>
+          <td style="text-align: center; color: red;"><%= absent_count %></td>
+          <td style="text-align: center;"><%= total_count %></td>
+          <td style="text-align: center;"><%= attendance_rate %>%</td>
+          <td>-</td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <!-- Footer -->
+  <div class="pdf-footer">
+    <div class="footer-signatures">
+      <div class="signature-block">
+        <div class="signature-line"></div>
+        <p class="signature-label">Firma del Supervisor</p>
+        <p class="signature-label">Nombre: _________________________</p>
+      </div>
+      <div class="signature-block">
+        <div class="signature-line"></div>
+        <p class="signature-label">Firma del Administrador</p>
+        <p class="signature-label">Nombre: _________________________</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+

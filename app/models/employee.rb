@@ -5,6 +5,7 @@ class Employee < ApplicationRecord
   has_one :party_card, dependent: :destroy
   has_one :psuv_card, dependent: :destroy
   has_many :family_members, dependent: :destroy
+  has_many :attendances, dependent: :destroy
 
   # Nested attributes
   accepts_nested_attributes_for :payment_accounts, allow_destroy: true, reject_if: proc { |attributes| attributes['account_type'].blank? }

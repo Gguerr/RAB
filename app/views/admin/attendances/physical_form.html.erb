@@ -1,0 +1,69 @@
+<% content_for :page_title, "Planilla Física de Asistencia" %>
+
+<div class="max-w-2xl mx-auto">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">📋 Planilla Física de Asistencia</h1>
+    <p class="text-gray-600">Selecciona las opciones para generar la planilla</p>
+  </div>
+
+  <!-- Form -->
+  <div class="bg-white rounded-xl shadow-lg p-6">
+    <%= form_with url: physical_form_admin_attendances_path(format: :pdf), method: :get, local: true, data: { turbo: false } do |form| %>
+      <div class="space-y-6">
+        <!-- Fecha -->
+        <div>
+          <%= form.label :date, "Fecha", class: "block text-gray-700 font-semibold mb-2" %>
+          <%= form.date_field :date, value: params[:date] || Date.current, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors" %>
+          <p class="text-sm text-gray-500 mt-1">
+            Para planilla semanal, selecciona cualquier fecha de la semana deseada
+          </p>
+        </div>
+
+        <!-- Tipo de Planilla -->
+        <div>
+          <%= form.label :plan_type, "Tipo de Planilla", class: "block text-gray-700 font-semibold mb-2" %>
+          <div class="space-y-3">
+            <label class="flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-wine-primary transition-colors">
+              <%= radio_button_tag :plan_type, "daily", params[:plan_type] != 'weekly', class: "w-5 h-5 text-wine-primary focus:ring-wine-primary" %>
+              <div class="ml-3">
+                <span class="block font-medium text-gray-900">📅 Planilla Diaria</span>
+                <span class="block text-sm text-gray-500">Planilla para un solo día</span>
+              </div>
+            </label>
+            <label class="flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-wine-primary transition-colors">
+              <%= radio_button_tag :plan_type, "weekly", params[:plan_type] == 'weekly', class: "w-5 h-5 text-wine-primary focus:ring-wine-primary" %>
+              <div class="ml-3">
+                <span class="block font-medium text-gray-900">📆 Planilla Semanal</span>
+                <span class="block text-sm text-gray-500">Planilla para toda la semana</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Ubicación de Trabajo -->
+        <div>
+          <%= form.label :work_location, "Ubicación de Trabajo", class: "block text-gray-700 font-semibold mb-2" %>
+          <%= form.select :work_location, 
+                          options_for_select([
+                            ['Todos los trabajadores', ''],
+                            ['Sala', 'sala'],
+                            ['Galpón', 'galpon']
+                          ], params[:work_location]), 
+                          {}, 
+                          { class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors" } %>
+        </div>
+
+        <!-- Botones -->
+        <div class="flex gap-4 pt-4">
+          <%= form.submit "📄 Generar Planilla PDF", 
+                          class: "flex-1 bg-wine-primary text-white px-6 py-3 rounded-lg hover:bg-wine-secondary transition-colors font-semibold",
+                          formtarget: "_blank" %>
+          <%= link_to "Cancelar", admin_attendances_path(date: params[:date]), 
+                      class: "px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+</div>

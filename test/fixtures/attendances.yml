@@ -1,0 +1,19 @@
+one:
+  employee: one
+  attendance_date: <%= Date.current %>
+  present: true
+  notes: "Asistencia normal"
+
+two:
+  employee: two
+  attendance_date: <%= Date.current %>
+  present: false
+  notes: "Ausencia justificada"
+
+three:
+  employee: one
+  attendance_date: <%= Date.current - 1.day %>
+  present: true
+  notes: "Asistencia puntual"
+
+

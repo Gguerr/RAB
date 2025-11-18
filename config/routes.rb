@@ -22,6 +22,7 @@ Rails.application.routes.draw do
     end
     root 'dashboard#index'
     get 'dashboard', to: 'dashboard#index'
+    get 'manual', to: 'dashboard#download_manual'
     
     resources :roles do
       member do
@@ -50,6 +51,16 @@ Rails.application.routes.draw do
         get :calendar
       end
     end
+    
+            resources :attendances do
+              collection do
+                patch :bulk_update
+                get :report
+                get :physical_form
+                get :monthly_report
+                get :yearly_report
+              end
+            end
   end
   
   # Redireccionar root a login de admin

@@ -1,0 +1,122 @@
+<div class="max-w-7xl mx-auto">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">Reporte de Asistencia Diaria</h1>
+    <p class="text-gray-600">Fecha: <%= @date.strftime("%d/%m/%Y") %></p>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex items-center">
+        <div class="p-3 bg-green-100 rounded-full">
+          <span class="text-green-600 text-xl">✅</span>
+        </div>
+        <div class="ml-4">
+          <p class="text-gray-600 text-sm">Presentes</p>
+          <p class="text-2xl font-bold text-gray-900"><%= @summary[:present] %></p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex items-center">
+        <div class="p-3 bg-red-100 rounded-full">
+          <span class="text-red-600 text-xl">❌</span>
+        </div>
+        <div class="ml-4">
+          <p class="text-gray-600 text-sm">Ausentes</p>
+          <p class="text-2xl font-bold text-gray-900"><%= @summary[:absent] %></p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex items-center">
+        <div class="p-3 bg-blue-100 rounded-full">
+          <span class="text-blue-600 text-xl">👥</span>
+        </div>
+        <div class="ml-4">
+          <p class="text-gray-600 text-sm">Total</p>
+          <p class="text-2xl font-bold text-gray-900"><%= @summary[:total] %></p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex items-center">
+        <div class="p-3 bg-purple-100 rounded-full">
+          <span class="text-purple-600 text-xl">📊</span>
+        </div>
+        <div class="ml-4">
+          <p class="text-gray-600 text-sm">% Asistencia</p>
+          <p class="text-2xl font-bold text-gray-900"><%= @summary[:attendance_rate] %>%</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendance Table -->
+  <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+    <div class="px-6 py-4 bg-wine-primary text-white">
+      <h3 class="text-xl font-bold">Detalle de Asistencia</h3>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead>
+          <tr class="bg-gray-50 border-b">
+            <th class="text-left py-4 px-4 font-semibold text-gray-700">Estado</th>
+            <th class="text-left py-4 px-4 font-semibold text-gray-700">Cédula</th>
+            <th class="text-left py-4 px-4 font-semibold text-gray-700">Nombres</th>
+            <th class="text-left py-4 px-4 font-semibold text-gray-700">Apellidos</th>
+            <th class="text-left py-4 px-4 font-semibold text-gray-700">Cargo</th>
+            <th class="text-left py-4 px-4 font-semibold text-gray-700">Observaciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @attendances.each do |attendance| %>
+            <tr class="border-b hover:bg-gray-50">
+              <td class="py-4 px-4">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium <%= attendance.present? ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
+                  <%= attendance.present? ? '✅ Presente' : '❌ Ausente' %>
+                </span>
+              </td>
+              <td class="py-4 px-4 font-medium text-gray-900">
+                <%= attendance.employee.identification_number %>
+              </td>
+              <td class="py-4 px-4 text-gray-900">
+                <%= attendance.employee.names %>
+              </td>
+              <td class="py-4 px-4 text-gray-900">
+                <%= attendance.employee.surnames %>
+              </td>
+              <td class="py-4 px-4 text-gray-600">
+                <%= attendance.employee.position %>
+              </td>
+              <td class="py-4 px-4 text-gray-600">
+                <%= attendance.notes.present? ? attendance.notes : '-' %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="mt-8 flex justify-between">
+    <%= link_to admin_attendances_path, 
+                class: "bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors font-semibold" do %>
+      ← Volver a Asistencia
+    <% end %>
+    
+    <%= link_to report_admin_attendances_path(date: @date, format: :pdf), 
+                class: "bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors font-semibold flex items-center gap-2",
+                target: "_blank" do %>
+      🖨️ Imprimir PDF
+    <% end %>
+  </div>
+</div>
+
+

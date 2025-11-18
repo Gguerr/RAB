@@ -1,0 +1,140 @@
+<div class="max-w-7xl mx-auto">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">Reporte de Asistencia Anual</h1>
+    <p class="text-gray-600">Año: <%= @year %></p>
+  </div>
+
+  <!-- Year Selector -->
+  <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+    <h3 class="text-wine-primary text-xl font-bold mb-4">Seleccionar Año</h3>
+    <%= form_with url: yearly_report_admin_attendances_path, method: :get, local: true, class: "flex flex-col sm:flex-row gap-4 items-end" do |form| %>
+      <div class="flex-1">
+        <%= form.label :year, "Año", class: "block text-gray-700 font-semibold mb-2" %>
+        <%= form.select :year, options_for_select((Date.current.year - 5..Date.current.year + 1).map { |y| [y, y] }, @year), {}, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors" %>
+      </div>
+      <%= form.submit "Ver Reporte", class: "bg-wine-primary text-white px-6 py-3 rounded-lg hover:bg-wine-secondary transition-colors font-semibold" %>
+    <% end %>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex items-center">
+        <div class="p-3 bg-green-100 rounded-full">
+          <span class="text-green-600 text-xl">✅</span>
+        </div>
+        <div class="ml-4">
+          <p class="text-gray-600 text-sm">Días Presentes</p>
+          <p class="text-2xl font-bold text-gray-900"><%= @summary[:present_days] %></p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex items-center">
+        <div class="p-3 bg-red-100 rounded-full">
+          <span class="text-red-600 text-xl">❌</span>
+        </div>
+        <div class="ml-4">
+          <p class="text-gray-600 text-sm">Días Ausentes</p>
+          <p class="text-2xl font-bold text-gray-900"><%= @summary[:absent_days] %></p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex items-center">
+        <div class="p-3 bg-blue-100 rounded-full">
+          <span class="text-blue-600 text-xl">📅</span>
+        </div>
+        <div class="ml-4">
+          <p class="text-gray-600 text-sm">Total Días</p>
+          <p class="text-2xl font-bold text-gray-900"><%= @summary[:total_days] %></p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex items-center">
+        <div class="p-3 bg-purple-100 rounded-full">
+          <span class="text-purple-600 text-xl">📊</span>
+        </div>
+        <div class="ml-4">
+          <p class="text-gray-600 text-sm">% Asistencia</p>
+          <p class="text-2xl font-bold text-gray-900"><%= @summary[:attendance_rate] %>%</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Monthly Breakdown -->
+  <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+    <div class="px-6 py-4 bg-wine-primary text-white">
+      <h3 class="text-xl font-bold">Resumen por Mes - <%= @year %></h3>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead>
+          <tr class="bg-gray-50 border-b">
+            <th class="text-left py-4 px-4 font-semibold text-gray-700">Mes</th>
+            <th class="text-left py-4 px-4 font-semibold text-gray-700">Días Presentes</th>
+            <th class="text-left py-4 px-4 font-semibold text-gray-700">Días Ausentes</th>
+            <th class="text-left py-4 px-4 font-semibold text-gray-700">Total Días</th>
+            <th class="text-left py-4 px-4 font-semibold text-gray-700">% Asistencia</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% (1..12).each do |month| %>
+            <% month_attendances = @attendances.select { |a| a.attendance_date.month == month } %>
+            <% month_summary = Attendance.monthly_summary(@year, month) %>
+            <tr class="border-b hover:bg-gray-50">
+              <td class="py-4 px-4 font-medium text-gray-900">
+                <%= Date::MONTHNAMES[month] %>
+              </td>
+              <td class="py-4 px-4 text-green-600 font-semibold">
+                <%= month_summary[:present_days] %>
+              </td>
+              <td class="py-4 px-4 text-red-600 font-semibold">
+                <%= month_summary[:absent_days] %>
+              </td>
+              <td class="py-4 px-4 text-gray-900">
+                <%= month_summary[:total_days] %>
+              </td>
+              <td class="py-4 px-4">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium <%= month_summary[:attendance_rate] >= 90 ? 'bg-green-100 text-green-800' : month_summary[:attendance_rate] >= 80 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800' %>">
+                  <%= month_summary[:attendance_rate] %>%
+                </span>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Yearly Chart Placeholder -->
+  <div class="mt-8 bg-white rounded-xl shadow-lg p-6">
+    <h3 class="text-wine-primary text-xl font-bold mb-4">Gráfico de Asistencia Anual</h3>
+    <div class="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+      <p class="text-gray-500">Gráfico de barras por mes (implementar con Chart.js si se desea)</p>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="mt-8 flex justify-between">
+    <%= link_to admin_attendances_path, 
+                class: "bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors font-semibold" do %>
+      ← Volver a Asistencia
+    <% end %>
+    
+    <%= link_to yearly_report_admin_attendances_path(year: @year, format: :pdf), 
+                class: "bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors font-semibold flex items-center gap-2",
+                target: "_blank" do %>
+      🖨️ Imprimir PDF
+    <% end %>
+  </div>
+</div>
+
+

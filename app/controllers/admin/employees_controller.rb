@@ -82,7 +82,7 @@ class Admin::EmployeesController < ApplicationController
     params.require(:employee).permit(
       :identification_number, :names, :surnames, :birth_date, :hire_date,
       :home_address, :vacation_date, :vacation_days, :vacation_notes, :expired_vacations, :skills_abilities, :active,
-      :email, :phone_number, :position, :code, :voting_center,
+      :email, :phone_number, :position, :code, :voting_center, :work_location,
       
       # Worker size attributes
       worker_size_attributes: [:id, :shirt_size, :shoes_size, :pants_size],

@@ -1,0 +1,93 @@
+<div class="pdf-container">
+  <!-- Header -->
+  <div class="pdf-header">
+    <h1 class="pdf-title">REPORTE DE ASISTENCIA ANUAL</h1>
+    <div class="header-info">
+      <p><strong>Año:</strong> <%= @year %></p>
+      <p><strong>Empresa:</strong> RAB</p>
+      <p><strong>Generado:</strong> <%= Time.current.strftime("%d/%m/%Y %H:%M") %></p>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="pdf-summary">
+    <h2>Resumen del Año</h2>
+    <div class="summary-grid">
+      <div class="summary-item">
+        <strong>Total Días:</strong> <%= @summary[:total_days] %>
+      </div>
+      <div class="summary-item">
+        <strong>Días Presentes:</strong> <%= @summary[:present_days] %>
+      </div>
+      <div class="summary-item">
+        <strong>Días Ausentes:</strong> <%= @summary[:absent_days] %>
+      </div>
+      <div class="summary-item">
+        <strong>% Asistencia:</strong> <%= @summary[:attendance_rate] %>%
+      </div>
+    </div>
+  </div>
+
+  <!-- Monthly Breakdown -->
+  <h2>Resumen por Mes</h2>
+  <table class="pdf-table">
+    <thead>
+      <tr>
+        <th style="width: 15%;">Mes</th>
+        <th style="width: 15%;">Días Presentes</th>
+        <th style="width: 15%;">Días Ausentes</th>
+        <th style="width: 15%;">Total Días</th>
+        <th style="width: 15%;">% Asistencia</th>
+        <th style="width: 25%;">Observaciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% (1..12).each do |month| %>
+        <% month_summary = Attendance.monthly_summary(@year, month) %>
+        <tr class="<%= month.odd? ? 'odd' : 'even' %>">
+          <td><%= Date::MONTHNAMES[month] %></td>
+          <td style="text-align: center; color: green;"><%= month_summary[:present_days] %></td>
+          <td style="text-align: center; color: red;"><%= month_summary[:absent_days] %></td>
+          <td style="text-align: center;"><%= month_summary[:total_days] %></td>
+          <td style="text-align: center;"><%= month_summary[:attendance_rate] %>%</td>
+          <td>-</td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <!-- Annual Statistics -->
+  <h2>Estadísticas Anuales</h2>
+  <div class="stats-grid">
+    <div class="stat-item">
+      <strong>Mejor Mes:</strong> 
+      <% best_month = (1..12).max_by { |m| Attendance.monthly_summary(@year, m)[:attendance_rate] } %>
+      <%= Date::MONTHNAMES[best_month] %> 
+      (<%= Attendance.monthly_summary(@year, best_month)[:attendance_rate] %>%)
+    </div>
+    <div class="stat-item">
+      <strong>Peor Mes:</strong> 
+      <% worst_month = (1..12).min_by { |m| Attendance.monthly_summary(@year, m)[:attendance_rate] } %>
+      <%= Date::MONTHNAMES[worst_month] %> 
+      (<%= Attendance.monthly_summary(@year, worst_month)[:attendance_rate] %>%)
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="pdf-footer">
+    <div class="footer-signatures">
+      <div class="signature-block">
+        <div class="signature-line"></div>
+        <p class="signature-label">Firma del Supervisor</p>
+        <p class="signature-label">Nombre: _________________________</p>
+      </div>
+      <div class="signature-block">
+        <div class="signature-line"></div>
+        <p class="signature-label">Firma del Administrador</p>
+        <p class="signature-label">Nombre: _________________________</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+

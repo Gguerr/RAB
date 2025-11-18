@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_15_201426) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_05_004743) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -24,6 +24,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_15_201426) do
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_admins_on_email", unique: true
     t.index ["reset_password_token"], name: "index_admins_on_reset_password_token", unique: true
+  end
+
+  create_table "attendances", force: :cascade do |t|
+    t.bigint "employee_id", null: false
+    t.date "attendance_date", null: false
+    t.boolean "present", default: false
+    t.text "signature"
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["attendance_date"], name: "index_attendances_on_attendance_date"
+    t.index ["employee_id", "attendance_date"], name: "index_attendances_on_employee_id_and_attendance_date", unique: true
+    t.index ["employee_id"], name: "index_attendances_on_employee_id"
   end
 
   create_table "employees", force: :cascade do |t|
@@ -46,6 +59,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_15_201426) do
     t.string "position"
     t.string "code"
     t.string "voting_center"
+    t.string "work_location"
     t.index ["identification_number"], name: "index_employees_on_identification_number", unique: true
   end
 
@@ -167,6 +181,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_15_201426) do
     t.index ["employee_id"], name: "index_worker_sizes_on_employee_id"
   end
 
+  add_foreign_key "attendances", "employees"
   add_foreign_key "family_members", "employees"
   add_foreign_key "party_cards", "employees"
   add_foreign_key "payment_accounts", "employees"

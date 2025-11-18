@@ -1,0 +1,78 @@
+<div class="pdf-container">
+  <!-- Header -->
+  <div class="pdf-header">
+    <h1 class="pdf-title">REPORTE DE ASISTENCIA DIARIA</h1>
+    <div class="header-info">
+      <p><strong>Fecha:</strong> <%= @date.strftime("%d/%m/%Y") %></p>
+      <p><strong>Empresa:</strong> RAB</p>
+      <p><strong>Generado:</strong> <%= Time.current.strftime("%d/%m/%Y %H:%M") %></p>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="pdf-summary">
+    <h2>Resumen</h2>
+    <div class="summary-grid">
+      <div class="summary-item">
+        <strong>Total Empleados:</strong> <%= @summary[:total] %>
+      </div>
+      <div class="summary-item">
+        <strong>Presentes:</strong> <%= @summary[:present] %>
+      </div>
+      <div class="summary-item">
+        <strong>Ausentes:</strong> <%= @summary[:absent] %>
+      </div>
+      <div class="summary-item">
+        <strong>% Asistencia:</strong> <%= @summary[:attendance_rate] %>%
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendance Table -->
+  <table class="pdf-table">
+    <thead>
+      <tr>
+        <th style="width: 5%;">#</th>
+        <th style="width: 15%;">Cédula</th>
+        <th style="width: 20%;">Nombres</th>
+        <th style="width: 20%;">Apellidos</th>
+        <th style="width: 15%;">Cargo</th>
+        <th style="width: 10%;">Estado</th>
+        <th style="width: 15%;">Observaciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @attendances.each_with_index do |attendance, index| %>
+        <tr class="<%= index.even? ? 'even' : 'odd' %>">
+          <td style="text-align: center;"><%= index + 1 %></td>
+          <td><%= attendance.employee.identification_number %></td>
+          <td><%= attendance.employee.names %></td>
+          <td><%= attendance.employee.surnames %></td>
+          <td><%= attendance.employee.position %></td>
+          <td style="text-align: center;">
+            <%= attendance.present? ? '✅ Presente' : '❌ Ausente' %>
+          </td>
+          <td><%= attendance.notes.present? ? attendance.notes : '-' %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <!-- Footer -->
+  <div class="pdf-footer">
+    <div class="footer-signatures">
+      <div class="signature-block">
+        <div class="signature-line"></div>
+        <p class="signature-label">Firma del Supervisor</p>
+        <p class="signature-label">Nombre: _________________________</p>
+      </div>
+      <div class="signature-block">
+        <div class="signature-line"></div>
+        <p class="signature-label">Firma del Administrador</p>
+        <p class="signature-label">Nombre: _________________________</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
