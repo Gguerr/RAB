@@ -502,7 +502,7 @@ class Admin::ReportsController < ApplicationController
     def generate
       add_header
       add_title
-      add_filters_summary
+      # add_filters_summary  # Comentado: no mostrar resumen de filtros en PDFs
       add_content
       add_footer
       @pdf
