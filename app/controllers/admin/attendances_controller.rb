@@ -1,4 +1,5 @@
 class Admin::AttendancesController < ApplicationController
+  include AdminAuthentication
   before_action :authenticate_admin!
   before_action :set_attendance, only: [:show, :edit, :update, :destroy]
   layout 'admin'
@@ -87,7 +88,7 @@ class Admin::AttendancesController < ApplicationController
           end_date = @date.end_of_week
           "planilla_asistencia_semanal_#{start_date.strftime('%Y%m%d')}_#{end_date.strftime('%Y%m%d')}.pdf"
         else
-          "planilla_asistencia_#{@date.strftime('%Y%m%d')}.pdf"
+          "planilla_asistencia_diaria_#{@date.strftime('%Y%m%d')}.pdf"
         end
         filename = "#{@work_location}_#{filename}" if @work_location.present?
         
@@ -115,7 +116,7 @@ class Admin::AttendancesController < ApplicationController
       format.html
       format.pdf do
         send_data generate_daily_report_pdf,
-                  filename: "asistencia_#{@date.strftime('%Y%m%d')}.pdf",
+                  filename: "reporte_asistencia_diaria_#{@date.strftime('%Y%m%d')}.pdf",
                   type: 'application/pdf',
                   disposition: 'inline'
       end
@@ -132,7 +133,7 @@ class Admin::AttendancesController < ApplicationController
       format.html
       format.pdf do
         send_data generate_monthly_report_pdf,
-                  filename: "asistencia_mensual_#{@year}_#{@month.to_s.rjust(2, '0')}.pdf",
+                  filename: "reporte_asistencia_mensual_#{@year}_#{@month.to_s.rjust(2, '0')}.pdf",
                   type: 'application/pdf',
                   disposition: 'inline'
       end
@@ -148,7 +149,7 @@ class Admin::AttendancesController < ApplicationController
       format.html
       format.pdf do
         send_data generate_yearly_report_pdf,
-                  filename: "asistencia_anual_#{@year}.pdf",
+                  filename: "reporte_asistencia_anual_#{@year}.pdf",
                   type: 'application/pdf',
                   disposition: 'inline'
       end
@@ -397,15 +398,152 @@ class Admin::AttendancesController < ApplicationController
     pdf = Prawn::Document.new(page_size: 'A4', margin: [20, 20, 20, 20])
     draw_pdf_header(pdf, 'REPORTE ANUAL DE ASISTENCIA', ["Año: #{@year}"])
 
-    table_data = [["Mes", "Registros"]]
-    grouped = @attendances.group_by { |a| a.attendance_date.month }
-    1.upto(12) do |m|
-      table_data << [[m, Date::MONTHNAMES[m]].compact.join(' - '), (grouped[m] || []).count]
-    end
-    pdf.table(table_data, header: true, width: pdf.bounds.width)
+    # Obtener todos los empleados activos
+    @employees = Employee.active.order(:surnames, :names)
+    
+    # Nombres de meses en español
+    meses_espanol = {
+      1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+      5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+      9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
+    }
 
+    # Generar reporte mes por mes
+    1.upto(12) do |month|
+      # Título del mes
+      pdf.start_new_page unless month == 1
+      pdf.text "#{meses_espanol[month]} #{@year}", size: 14, style: :bold, align: :center
+      pdf.move_down 10
+
+      # Obtener asistencias del mes
+      month_attendances = @attendances.select { |a| a.attendance_date.month == month }
+      attendance_by_employee = month_attendances.group_by(&:employee_id)
+
+      # Crear tabla para el mes
+      table_data = [["#", "Cédula", "Nombre Completo", "Días Presentes", "Días Ausentes", "Total Días"]]
+      
+      @employees.each_with_index do |employee, index|
+        employee_attendances = attendance_by_employee[employee.id] || []
+        present_count = employee_attendances.count { |a| a.present? }
+        absent_count = employee_attendances.count { |a| !a.present? }
+        total_days = employee_attendances.count
+        
+        # Si no hay registros, mostrar como "Sin registros"
+        if total_days == 0
+          present_count = "-"
+          absent_count = "-"
+          total_days = "Sin registros"
+        end
+
+        table_data << [
+          (index + 1).to_s,
+          employee.identification_number,
+          "#{employee.names} #{employee.surnames}",
+          present_count.to_s,
+          absent_count.to_s,
+          total_days.to_s
+        ]
+      end
+
+      # Calcular anchos de columnas proporcionales
+      total_width = pdf.bounds.width
+      # Anchos fijos más pequeños para dejar más espacio al nombre
+      fixed_widths = 25 + 70 + 60 + 60 + 60  # Suma de anchos fijos
+      name_width = [total_width - fixed_widths, 150].max  # Ancho mínimo de 150 para nombre
+      
+      col_widths = [
+        25,         # #
+        70,         # Cédula
+        name_width, # Nombre Completo (el resto)
+        60,         # Días Presentes
+        60,         # Días Ausentes
+        60          # Total Días
+      ]
+      
+      # Ajustar si la suma excede el ancho disponible
+      sum_widths = col_widths.sum
+      if sum_widths > total_width
+        ratio = total_width.to_f / sum_widths
+        col_widths = col_widths.map { |w| (w * ratio).round }
+      end
+
+      pdf.table(table_data, header: true, width: total_width, column_widths: col_widths) do
+        row(0).font_style = :bold
+        cells.borders = [:left, :right, :top, :bottom]
+        cells.border_color = '000000'
+        cells.border_width = 0.5
+        cells.font_size = 7
+        row(0).font_size = 8
+        cells.padding = [3, 2, 3, 2]
+        row(0).padding = [4, 2, 4, 2]
+        cells.valign = :center
+        cells.align = :center
+        columns(2).align = :left  # Nombre alineado a la izquierda
+        columns(2).padding_left = 4
+      end
+
+      # Resumen del mes
+      pdf.move_down 10
+      month_present = month_attendances.count { |a| a.present? }
+      month_absent = month_attendances.count { |a| !a.present? }
+      month_total = month_attendances.count
+      month_rate = month_total > 0 ? (month_present.to_f / month_total * 100).round(2) : 0
+
+      pdf.text "Resumen del mes: #{month_present} días presentes, #{month_absent} días ausentes, #{month_total} días registrados. Tasa de asistencia: #{month_rate}%", 
+               size: 9, style: :italic
+      
+      pdf.move_down 15 unless month == 12
+    end
+
+    # Resumen anual al final
+    pdf.start_new_page
+    pdf.text "RESUMEN ANUAL", size: 14, style: :bold, align: :center
     pdf.move_down 10
-    pdf.text "Total anual: #{@attendances.count} registros"
+
+    summary_data = [["Mes", "Días Presentes", "Días Ausentes", "Total Registros", "% Asistencia"]]
+    
+    1.upto(12) do |month|
+      month_attendances = @attendances.select { |a| a.attendance_date.month == month }
+      month_present = month_attendances.count { |a| a.present? }
+      month_absent = month_attendances.count { |a| !a.present? }
+      month_total = month_attendances.count
+      month_rate = month_total > 0 ? (month_present.to_f / month_total * 100).round(2) : 0
+
+      summary_data << [
+        meses_espanol[month],
+        month_present.to_s,
+        month_absent.to_s,
+        month_total.to_s,
+        "#{month_rate}%"
+      ]
+    end
+
+    # Totales
+    total_present = @attendances.count { |a| a.present? }
+    total_absent = @attendances.count { |a| !a.present? }
+    total_registros = @attendances.count
+    total_rate = total_registros > 0 ? (total_present.to_f / total_registros * 100).round(2) : 0
+
+    summary_data << [
+      "TOTAL ANUAL",
+      total_present.to_s,
+      total_absent.to_s,
+      total_registros.to_s,
+      "#{total_rate}%"
+    ]
+
+    pdf.table(summary_data, header: true, width: pdf.bounds.width) do
+      row(0).font_style = :bold
+      row(-1).font_style = :bold
+      cells.borders = [:left, :right, :top, :bottom]
+      cells.border_color = '000000'
+      cells.border_width = 0.5
+      cells.font_size = 9
+      row(0).font_size = 10
+      cells.padding = [5, 4, 5, 4]
+      cells.valign = :center
+      cells.align = :center
+    end
 
     pdf.render
   end

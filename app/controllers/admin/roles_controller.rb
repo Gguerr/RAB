@@ -1,4 +1,5 @@
 class Admin::RolesController < ApplicationController
+  include AdminAuthentication
   layout 'admin'
   before_action :authenticate_admin!
   before_action :set_role, only: [:show, :edit, :update, :destroy, :activate, :deactivate, :manage_permissions, :update_permissions]
@@ -59,12 +60,16 @@ class Admin::RolesController < ApplicationController
   end
 
   def destroy
-    if @role.users.any?
+    if @role.users.exists?
       redirect_to admin_roles_path, alert: 'No se puede eliminar un rol que tiene usuarios asignados.'
-    elsif @role.destroy
-      redirect_to admin_roles_path, notice: 'Rol eliminado exitosamente.'
     else
-      redirect_to admin_roles_path, alert: 'No se pudo eliminar el rol.'
+      begin
+        @role.destroy!
+        redirect_to admin_roles_path, notice: 'Rol eliminado exitosamente.'
+      rescue => e
+        Rails.logger.error "Error al eliminar rol: #{e.message}"
+        redirect_to admin_roles_path, alert: "No se pudo eliminar el rol: #{e.message}"
+      end
     end
   end
 

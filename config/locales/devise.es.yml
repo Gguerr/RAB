@@ -1,0 +1,47 @@
+es:
+  devise:
+    failure:
+      not_found_in_database: "Correo electrónico o contraseña inválidos."
+      invalid: "Correo electrónico o contraseña inválidos."
+      unauthenticated: "Debes iniciar sesión o registrarte para continuar."
+      unconfirmed: "Debes confirmar tu cuenta antes de continuar."
+      locked: "Tu cuenta está bloqueada."
+      inactive: "Tu cuenta no está activa."
+      no_admin_role: "Tu cuenta no tiene permisos de administrador. Contacta al administrador del sistema."
+    passwords:
+      send_instructions: "Recibirás un correo electrónico con instrucciones sobre cómo restablecer tu contraseña en unos minutos."
+      send_paranoid_instructions: "Si tu dirección de correo electrónico existe en nuestra base de datos, recibirás un enlace de recuperación de contraseña en tu correo electrónico en unos minutos."
+      updated: "Tu contraseña ha sido cambiada exitosamente. Ahora estás conectado."
+      updated_not_active: "Tu contraseña ha sido cambiada exitosamente."
+      no_token: "No puedes acceder a esta página sin venir de un correo de restablecimiento de contraseña. Si vienes de un correo de restablecimiento de contraseña, asegúrate de usar la URL completa proporcionada."
+    sessions:
+      signed_in: "Sesión iniciada exitosamente."
+      signed_out: "Sesión cerrada exitosamente."
+      already_signed_out: "Sesión cerrada exitosamente."
+    registrations:
+      signed_up: "¡Bienvenido! Te has registrado exitosamente."
+      signed_up_but_inactive: "Te has registrado exitosamente. Sin embargo, no pudimos iniciar tu sesión porque tu cuenta aún no está activada."
+      updated: "Tu cuenta ha sido actualizada exitosamente."
+      destroyed: "¡Adiós! Tu cuenta ha sido cancelada exitosamente. Esperamos verte de nuevo pronto."
+    unlocks:
+      send_instructions: "Recibirás un correo electrónico con instrucciones sobre cómo desbloquear tu cuenta en unos minutos."
+      unlocked: "Tu cuenta ha sido desbloqueada exitosamente. Por favor inicia sesión para continuar."
+  errors:
+    messages:
+      not_found: "no encontrado"
+      not_saved:
+        one: "1 error impidió que este %{resource} se guardara:"
+        other: "%{count} errores impidieron que este %{resource} se guardara:"
+  activerecord:
+    errors:
+      models:
+        admin:
+          attributes:
+            email:
+              not_found: "No se encontró una cuenta de administrador con este correo electrónico. Verifica que estés usando el correo correcto o contacta al administrador del sistema."
+        user:
+          attributes:
+            email:
+              not_found: "No se encontró una cuenta de usuario con este correo electrónico. Verifica que estés usando el correo correcto."
+
+

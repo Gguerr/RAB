@@ -25,7 +25,18 @@
     <div class="edit-form">
       <h2>📅 Configurar Vacaciones</h2>
       
-      <%= form_with model: @employee, url: admin_vacation_path(@employee), method: :patch, local: true, class: "vacation-form" do |form| %>
+      <% if @employee.errors.any? %>
+        <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <h4 class="font-semibold text-red-800 mb-2">Errores al guardar:</h4>
+          <ul class="list-disc list-inside text-red-700">
+            <% @employee.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+      
+      <%= form_with model: @employee, url: admin_vacation_path(@employee), method: :patch, local: true, data: { turbo: false }, class: "vacation-form" do |form| %>
         <div class="form-group">
           <%= form.label :vacation_date, "Fecha de Vacaciones", class: "form-label" %>
           <%= form.date_field :vacation_date, 
@@ -57,10 +68,9 @@
           <%= form.submit "💾 Guardar Cambios", class: "btn btn-primary" %>
           <%= link_to "🗑️ Limpiar Vacaciones", 
               admin_vacation_path(@employee), 
-              method: :patch,
+              data: { "turbo-method": :patch, "turbo-confirm": "¿Está seguro de que desea limpiar las vacaciones de este empleado?" },
               params: { employee: { vacation_date: nil, vacation_days: nil, vacation_notes: nil } },
-              class: "btn btn-danger",
-              confirm: "¿Está seguro de que desea limpiar las vacaciones de este empleado?" %>
+              class: "btn btn-danger" %>
           <% if @employee.vacation_date.present? && @employee.vacation_days.present? %>
             <%= link_to "📄 Generar PDF", 
                 generate_pdf_admin_vacation_path(@employee), 

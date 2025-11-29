@@ -1,0 +1,158 @@
+<% content_for :page_title, "Gestionar Roles de Usuario" %>
+
+<div class="max-w-4xl mx-auto space-y-6">
+  <!-- Header -->
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <div class="flex-shrink-0 h-12 w-12">
+          <div class="h-12 w-12 rounded-full bg-wine-primary flex items-center justify-center">
+            <span class="text-white font-semibold">
+              <%= @user.first_name[0]&.upcase %><%= @user.last_name[0]&.upcase %>
+            </span>
+          </div>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">🔐 Gestionar Roles</h1>
+          <p class="text-gray-600"><%= @user.full_name %> - <%= @user.email %></p>
+        </div>
+      </div>
+      <div class="flex space-x-3">
+        <%= link_to admin_user_path(@user), 
+            class: "inline-flex items-center px-4 py-2 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 transition-colors" do %>
+          ← Volver al Usuario
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Current Roles -->
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">📋 Roles Actuales</h2>
+    <% if @user.roles.any? %>
+      <div class="space-y-3">
+        <% @user.roles.each do |role| %>
+          <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+            <div class="flex-1">
+              <h3 class="text-sm font-medium text-gray-900"><%= role.name.humanize %></h3>
+              <% if role.description.present? %>
+                <p class="text-sm text-gray-500 mt-1"><%= role.description %></p>
+              <% end %>
+              <div class="flex items-center mt-2 space-x-4">
+                <span class="text-xs text-gray-500">
+                  <%= role.permissions.count %> permisos asignados
+                </span>
+                <% if role.active? %>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                    Activo
+                  </span>
+                <% else %>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                    Inactivo
+                  </span>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+        <div class="text-gray-400 text-4xl mb-2">🔒</div>
+        <p class="text-gray-500">Este usuario no tiene roles asignados.</p>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Assign Roles Form -->
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">➕ Asignar Nuevos Roles</h2>
+    <p class="text-sm text-gray-600 mb-6">Selecciona los roles que deseas asignar a este usuario. Los roles seleccionados se agregarán a los roles actuales.</p>
+    
+    <%= form_with url: update_roles_admin_user_path(@user), method: :patch, local: true, class: "space-y-6" do |form| %>
+      <% if @roles.any? %>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <% @roles.each do |role| %>
+            <div class="flex items-start space-x-3 p-4 border-2 border-gray-200 rounded-lg hover:border-wine-primary transition-colors <%= 'bg-blue-50 border-blue-300' if @user_role_ids.include?(role.id) %>">
+              <div class="flex items-center h-5">
+                <%= check_box_tag "user[role_ids][]", role.id, @user_role_ids.include?(role.id), 
+                    { class: "h-4 w-4 text-wine-primary focus:ring-wine-primary border-gray-300 rounded" } %>
+              </div>
+              <div class="flex-1 min-w-0">
+                <label class="text-sm font-medium text-gray-900 cursor-pointer">
+                  <%= role.name.humanize %>
+                </label>
+                <% if role.description.present? %>
+                  <p class="text-sm text-gray-500 mt-1"><%= role.description %></p>
+                <% end %>
+                <div class="flex items-center mt-2 space-x-3">
+                  <span class="text-xs text-gray-500">
+                    <%= role.permissions.count %> permisos
+                  </span>
+                  <% if role.active? %>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                      Activo
+                    </span>
+                  <% else %>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                      Inactivo
+                    </span>
+                  <% end %>
+                </div>
+                <% if role.permissions.any? %>
+                  <div class="mt-2">
+                    <p class="text-xs font-medium text-gray-700 mb-1">Permisos incluidos:</p>
+                    <div class="flex flex-wrap gap-1">
+                      <% role.permissions.limit(5).each do |permission| %>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                          <%= permission.display_name %>
+                        </span>
+                      <% end %>
+                      <% if role.permissions.count > 5 %>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                          +<%= role.permissions.count - 5 %> más
+                        </span>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+        
+        <!-- Hidden field to handle empty selection -->
+        <%= hidden_field_tag "user[role_ids][]", "" %>
+        
+        <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+          <p class="text-sm text-blue-700">
+            💡 <strong>Nota:</strong> Al guardar, se actualizarán todos los roles del usuario. Los roles no seleccionados serán removidos.
+          </p>
+        </div>
+      <% else %>
+        <div class="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+          <div class="text-gray-400 text-4xl mb-2">🔒</div>
+          <p class="text-gray-500 mb-4">No hay roles disponibles en el sistema.</p>
+          <%= link_to new_admin_role_path, 
+              class: "inline-flex items-center px-4 py-2 bg-wine-primary text-white font-medium rounded-lg hover:bg-wine-secondary transition-colors" do %>
+            Crear Primer Rol
+          <% end %>
+        </div>
+      <% end %>
+
+      <!-- Actions -->
+      <div class="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+        <%= link_to admin_user_path(@user), 
+            class: "px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors" do %>
+          Cancelar
+        <% end %>
+        
+        <% if @roles.any? %>
+          <%= form.submit "Guardar Roles", 
+              class: "px-6 py-3 bg-wine-primary text-white font-medium rounded-lg hover:bg-wine-secondary transition-colors cursor-pointer" %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>
+

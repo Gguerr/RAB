@@ -1,4 +1,5 @@
 class Admin::EmployeesController < ApplicationController
+  include AdminAuthentication
   before_action :authenticate_admin!
   before_action :set_employee, only: [:show, :edit, :update, :destroy, :manage_accounts, :manage_sizes, :manage_cards, :manage_family]
   layout 'admin'

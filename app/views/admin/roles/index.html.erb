@@ -159,15 +159,17 @@
             <div class="flex space-x-2">
               <% if role.active? %>
                 <%= link_to deactivate_admin_role_path(role), 
-                    method: :patch,
-                    data: { confirm: "¿Estás seguro de desactivar este rol?" },
+                    data: { 
+                      turbo_method: :patch,
+                      confirm: "¿Estás seguro de desactivar este rol?" 
+                    },
                     class: "text-yellow-600 hover:text-yellow-800 transition-colors",
                     title: "Desactivar" do %>
                   🚫
                 <% end %>
               <% else %>
                 <%= link_to activate_admin_role_path(role), 
-                    method: :patch,
+                    data: { turbo_method: :patch },
                     class: "text-green-600 hover:text-green-800 transition-colors",
                     title: "Activar" do %>
                   ✅
@@ -176,8 +178,10 @@
               
               <% if role.users.empty? %>
                 <%= link_to admin_role_path(role), 
-                    method: :delete,
-                    data: { confirm: "¿Estás seguro de eliminar este rol? Esta acción no se puede deshacer." },
+                    data: { 
+                      turbo_method: :delete,
+                      confirm: "¿Estás seguro de eliminar este rol? Esta acción no se puede deshacer." 
+                    },
                     class: "text-red-600 hover:text-red-800 transition-colors",
                     title: "Eliminar" do %>
                   🗑️

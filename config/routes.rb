@@ -4,6 +4,8 @@ Rails.application.routes.draw do
     sign_in: 'login',
     sign_out: 'logout',
     sign_up: 'registro'
+  }, controllers: {
+    sessions: 'admins/sessions'
   }
   
   # Rutas administrativas
@@ -30,6 +32,15 @@ Rails.application.routes.draw do
         patch :deactivate
         get :manage_permissions
         patch :update_permissions
+      end
+    end
+    
+    resources :users do
+      member do
+        patch :activate
+        patch :deactivate
+        get :manage_roles
+        patch :update_roles
       end
     end
     

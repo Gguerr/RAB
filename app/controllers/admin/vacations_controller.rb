@@ -1,4 +1,5 @@
 class Admin::VacationsController < ApplicationController
+  include AdminAuthentication
   layout 'admin'
   before_action :authenticate_admin!
   before_action :set_employee, only: [:show, :edit, :update]

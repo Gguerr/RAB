@@ -4,7 +4,13 @@
       <%= image_tag "logo_Rab.png", alt: "RAB Logo", class: "logo" %>
     </div>
     
-    <h2 class="login-title">Panel Administrativo</h2>
+    <h2 class="login-title">
+      <% if resource_name == :admin %>
+        Panel Administrativo
+      <% else %>
+        Inicio de Sesión
+      <% end %>
+    </h2>
     <p class="login-subtitle">Ingrese sus credenciales para acceder</p>
 
     <%= form_for(resource, as: resource_name, url: session_path(resource_name), html: { class: "login-form" }) do |f| %>
@@ -18,12 +24,20 @@
         <%= f.password_field :password, autocomplete: "current-password", class: "form-input", placeholder: "••••••••" %>
       </div>
 
-      <% if devise_mapping.rememberable? %>
-        <div class="form-group checkbox-group">
-          <%= f.check_box :remember_me, class: "form-checkbox" %>
-          <%= f.label :remember_me, "Recordarme", class: "checkbox-label" %>
-        </div>
-      <% end %>
+      <div class="form-group" style="display: flex; justify-content: space-between; align-items: center;">
+        <% if devise_mapping.rememberable? %>
+          <div class="checkbox-group">
+            <%= f.check_box :remember_me, { checked: false, class: "form-checkbox" }, "1", "0" %>
+            <%= f.label :remember_me, "Recordarme", class: "checkbox-label" %>
+          </div>
+        <% end %>
+        
+        <% if devise_mapping.recoverable? && controller_name != 'passwords' && controller_name != 'registrations' %>
+          <%= link_to "¿Olvidaste tu contraseña?", new_password_path(resource_name), 
+              class: "forgot-password-link", 
+              style: "color: #dc2626; text-decoration: none; font-size: 0.875rem; font-weight: 500;" %>
+        <% end %>
+      </div>
 
       <div class="form-group">
         <%= f.submit "Iniciar Sesión", class: "btn btn-primary btn-login" %>
