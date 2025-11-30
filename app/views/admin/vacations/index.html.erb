@@ -45,11 +45,11 @@
       <% end %>
       
       <% if @vacation_stats[:expired_count] > 0 %>
-        <%= form_with url: bulk_update_admin_vacations_path, method: :patch, local: true, style: "display: inline;" do |form| %>
-          <%= form.hidden_field :mark_expired_as_taken, value: true %>
+        <%= form_with url: bulk_update_admin_vacations_path, method: :patch, local: true, data: { turbo: false }, style: "display: inline;" do |form| %>
+          <%= form.hidden_field :mark_expired_as_taken, value: "1" %>
           <%= form.submit "✅ Actualizar Vencidas", 
               class: "btn btn-warning",
-              confirm: "¿Marcar #{@vacation_stats[:expired_count]} vacaciones vencidas como tomadas?" %>
+              data: { confirm: "¿Marcar #{@vacation_stats[:expired_count]} vacaciones vencidas como tomadas?" } %>
         <% end %>
       <% end %>
       
@@ -74,16 +74,26 @@
               <p class="vacation-date">
                 📅 Desde: <%= employee.vacation_date&.strftime('%d/%m/%Y') %>
               </p>
-              <p class="days-info">
-                <% days_passed = (Date.current - employee.vacation_date).to_i %>
-                <% if days_passed > 0 %>
-                  🕐 Lleva <%= days_passed %> día<%= 's' if days_passed != 1 %>
-                <% elsif days_passed == 0 %>
-                  🆕 Empezó hoy
-                <% else %>
-                  ⏰ Empieza en <%= days_passed.abs %> día<%= 's' if days_passed.abs != 1 %>
-                <% end %>
-              </p>
+              <% if employee.vacation_days.present? %>
+                <% vacation_end = employee.vacation_date + employee.vacation_days.days %>
+                <p class="vacation-date">
+                  📅 Hasta: <%= vacation_end.strftime('%d/%m/%Y') %>
+                </p>
+                <p class="days-info">
+                  <% days_passed = (Date.current - employee.vacation_date).to_i %>
+                  <% days_remaining = (vacation_end - Date.current).to_i %>
+                  <% if days_passed > 0 %>
+                    🕐 Lleva <%= days_passed %> día<%= 's' if days_passed != 1 %> de <%= employee.vacation_days %>
+                  <% elsif days_passed == 0 %>
+                    🆕 Empezó hoy
+                  <% end %>
+                  <% if days_remaining > 0 %>
+                    <br>⏰ Faltan <%= days_remaining %> día<%= 's' if days_remaining != 1 %> para terminar
+                  <% elsif days_remaining == 0 %>
+                    <br>🏁 Termina hoy
+                  <% end %>
+                </p>
+              <% end %>
             </div>
             <div class="vacation-actions">
               <%= link_to admin_vacation_path(employee), class: "btn-small btn-info" do %>
@@ -143,7 +153,7 @@
     <div class="vacation-section">
       <h2>⚠️ Vacaciones Vencidas</h2>
       <div class="vacation-list">
-        <% @expired_vacations.limit(10).each do |employee| %>
+        <% @expired_vacations.take(10).each do |employee| %>
           <div class="vacation-row expired">
             <div class="employee-basic">
               <span class="employee-name"><%= employee.names %> <%= employee.surnames %></span>
@@ -151,10 +161,30 @@
             </div>
             <div class="vacation-timing">
               <span class="vacation-date">📅 <%= employee.vacation_date&.strftime('%d/%m/%Y') %></span>
-              <span class="days-expired">
-                <% days_expired = (Date.current - employee.vacation_date).to_i %>
-                ⚠️ Vencida hace <%= days_expired %> día<%= 's' if days_expired != 1 %>
-              </span>
+              <% if employee.vacation_days.present? %>
+                <% vacation_end = employee.vacation_date + employee.vacation_days.days %>
+                <span class="vacation-date">📅 Hasta: <%= vacation_end.strftime('%d/%m/%Y') %></span>
+                <span class="days-expired">
+                  <% days_expired = (Date.current - vacation_end).to_i %>
+                  ⚠️ Vencida hace <%= days_expired %> día<%= 's' if days_expired != 1 %>
+                  <% 
+                    # Calcular días que tenía derecho vs días que tomó
+                    days_entitled = employee.calculate_vacation_days(employee.vacation_date)
+                    days_taken = employee.vacation_days || 0
+                    days_not_taken = days_entitled - days_taken
+                  %>
+                  <% if days_not_taken > 0 && vacation_end < Date.current %>
+                    <br>(<%= days_not_taken %> día<%= 's' if days_not_taken != 1 %> no tomado<%= 's' if days_not_taken != 1 %> de <%= days_entitled %> día<%= 's' if days_entitled != 1 %> correspondiente<%= 's' if days_entitled != 1 %>)
+                  <% elsif days_taken >= days_entitled %>
+                    <br>(✓ Todos los días correspondientes fueron tomados)
+                  <% end %>
+                </span>
+              <% else %>
+                <span class="days-expired">
+                  <% days_expired = (Date.current - employee.vacation_date).to_i %>
+                  ⚠️ Vencida hace <%= days_expired %> día<%= 's' if days_expired != 1 %>
+                </span>
+              <% end %>
             </div>
             <div class="row-actions">
               <%= link_to edit_admin_vacation_path(employee), class: "btn-small btn-warning" do %>

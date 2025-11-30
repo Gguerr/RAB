@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_05_004743) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_30_205301) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -22,6 +22,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_05_004743) do
     t.datetime "remember_created_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "sign_in_count", default: 0, null: false
+    t.datetime "current_sign_in_at"
+    t.datetime "last_sign_in_at"
+    t.string "current_sign_in_ip"
+    t.string "last_sign_in_ip"
     t.index ["email"], name: "index_admins_on_email", unique: true
     t.index ["reset_password_token"], name: "index_admins_on_reset_password_token", unique: true
   end
@@ -60,6 +65,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_05_004743) do
     t.string "code"
     t.string "voting_center"
     t.string "work_location"
+    t.boolean "vacation_approved", default: false, null: false
     t.index ["identification_number"], name: "index_employees_on_identification_number", unique: true
   end
 

@@ -47,12 +47,37 @@
 
         <div class="form-group">
           <%= form.label :vacation_days, "Días de Vacaciones", class: "form-label" %>
-          <%= form.number_field :vacation_days, 
-              class: "form-input", 
-              placeholder: "Ej: 15",
-              min: 1,
-              max: 60 %>
-          <small class="form-help">Número de días calendario de vacaciones</small>
+          <div class="vacation-days-input-wrapper">
+            <%= form.number_field :vacation_days, 
+                class: "form-input", 
+                placeholder: "Ej: 15",
+                min: 1,
+                max: 60,
+                id: "vacation_days_input",
+                data: { 
+                  base_days: 15,
+                  years_of_service: @employee.years_of_service(@employee.vacation_date || Date.current),
+                  calculated_days: @employee.calculate_vacation_days(@employee.vacation_date || Date.current)
+                } %>
+            <button type="button" class="btn-calculate-days" onclick="calculateVacationDays()">
+              🧮 Calcular Automático
+            </button>
+          </div>
+          <small class="form-help">
+            <strong>Cálculo automático:</strong> Primer año = 15 días. A partir del segundo año = 15 días + 1 día por cada año adicional
+            <br>
+            <span id="vacation-calculation-info">
+              <% vacation_date_for_calc = @employee.vacation_date || Date.current %>
+              <% years = @employee.years_of_service(vacation_date_for_calc) %>
+              <% calculated = @employee.calculate_vacation_days(vacation_date_for_calc) %>
+              <% if years == 0 %>
+                <strong>Primer año laboral</strong> → <strong><%= calculated %> días</strong>
+              <% else %>
+                Antigüedad: <%= years + 1 %> año<%= 's' if years + 1 != 1 %> (años completos: <%= years %>) → 
+                <strong><%= calculated %> días</strong> (15 base + <%= years %> por antigüedad)
+              <% end %>
+            </span>
+          </small>
         </div>
 
         <div class="form-group">
@@ -86,6 +111,36 @@
       
       <div class="calculator-info">
         <div class="calc-item">
+          <span class="calc-label">👤 Antigüedad del Empleado:</span>
+          <span class="calc-value">
+            <% vacation_date_for_calc = @employee.vacation_date || Date.current %>
+            <% years = @employee.years_of_service(vacation_date_for_calc) %>
+            <% if years == 0 %>
+              <strong>Primer año laboral</strong>
+            <% else %>
+              <%= years + 1 %> año<%= 's' if years + 1 != 1 %> (<%= years %> año<%= 's' if years != 1 %> completo<%= 's' if years != 1 %>)
+            <% end %>
+            <small style="color: var(--gray-lead-light); font-size: 0.8rem;">
+              (Desde: <%= @employee.hire_date&.strftime('%d/%m/%Y') || 'N/A' %>)
+            </small>
+          </span>
+        </div>
+        
+        <div class="calc-item">
+          <span class="calc-label">📊 Días Calculados Automáticamente:</span>
+          <span class="calc-value" style="color: var(--blue); font-weight: 700;">
+            <%= @employee.calculate_vacation_days(vacation_date_for_calc) %> días
+            <small style="color: var(--gray-lead-light); font-size: 0.8rem; font-weight: 400;">
+              <% if years == 0 %>
+                (Primer año: 15 días)
+              <% else %>
+                (15 base + <%= years %> por antigüedad)
+              <% end %>
+            </small>
+          </span>
+        </div>
+        
+        <div class="calc-item">
           <span class="calc-label">📅 Fecha de Inicio:</span>
           <span class="calc-value" id="start-date">
             <%= @employee.vacation_date&.strftime('%d/%m/%Y') || 'No definida' %>
@@ -96,6 +151,11 @@
           <span class="calc-label">📆 Días Solicitados:</span>
           <span class="calc-value" id="vacation-days">
             <%= @employee.vacation_days || 'No definido' %>
+            <% if @employee.vacation_days.present? && @employee.vacation_days != @employee.calculate_vacation_days %>
+              <small style="color: var(--yellow); font-size: 0.8rem;">
+                (Calculado: <%= @employee.calculate_vacation_days %>)
+              </small>
+            <% end %>
           </span>
         </div>
         
@@ -381,6 +441,42 @@
     }
   }
 
+  .vacation-days-input-wrapper {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .vacation-days-input-wrapper .form-input {
+    flex: 1;
+  }
+
+  .btn-calculate-days {
+    padding: 0.75rem 1rem;
+    background: var(--blue);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .btn-calculate-days:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+  }
+
+  #vacation-calculation-info {
+    display: block;
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: #f0f9ff;
+    border-left: 3px solid var(--blue);
+    border-radius: 4px;
+  }
+
   @media (max-width: 768px) {
     .vacation-edit {
       padding: 1rem;
@@ -401,7 +497,41 @@
       align-items: flex-start;
       gap: 0.5rem;
     }
+
+    .vacation-days-input-wrapper {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .btn-calculate-days {
+      width: 100%;
+    }
   }
 </style>
+
+<script>
+  function calculateVacationDays() {
+    const input = document.getElementById('vacation_days_input');
+    const calculatedDays = input.dataset.calculatedDays;
+    
+    if (calculatedDays) {
+      input.value = calculatedDays;
+      
+      // Mostrar mensaje de confirmación
+      const info = document.getElementById('vacation-calculation-info');
+      const originalText = info.innerHTML;
+      info.innerHTML = '<strong style="color: var(--green);">✓ Días calculados automáticamente: ' + calculatedDays + ' días</strong>';
+      info.style.background = '#d1fae5';
+      info.style.borderColor = 'var(--green)';
+      
+      // Restaurar después de 3 segundos
+      setTimeout(() => {
+        info.innerHTML = originalText;
+        info.style.background = '#f0f9ff';
+        info.style.borderColor = 'var(--blue)';
+      }, 3000);
+    }
+  }
+</script>
 
 

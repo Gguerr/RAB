@@ -57,17 +57,13 @@
   </div>
 
   <!-- Información Laboral -->
-  <div class="bg-white rounded-xl shadow-lg p-6" data-controller="date-calculator">
+  <div class="bg-white rounded-xl shadow-lg p-6">
     <h3 class="text-wine-primary text-xl font-bold mb-6 pb-3 border-b-2 border-gray-100">💼 Información Laboral</h3>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <div>
         <%= form.label :hire_date, "Fecha de Ingreso", class: "block text-gray-700 font-semibold mb-2" %>
         <%= form.date_field :hire_date, 
-                           class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors",
-                           data: { 
-                             "date-calculator-target": "hireDate",
-                             "action": "change->date-calculator#calculateVacationDate"
-                           } %>
+                           class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors" %>
       </div>
 
       <div>
@@ -79,17 +75,6 @@
         <%= form.label :code, "Código", class: "block text-gray-700 font-semibold mb-2" %>
         <%= form.text_field :code, class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors", placeholder: "EMP001" %>
       </div>
-
-      <div>
-        <%= form.label :vacation_date, "Fecha de Vacaciones", class: "block text-gray-700 font-semibold mb-2" %>
-        <%= form.date_field :vacation_date, 
-                           class: "w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-wine-primary focus:outline-none transition-colors",
-                           data: { "date-calculator-target": "vacationDate" } %>
-        <p class="text-sm text-gray-500 mt-1">Se calcula automáticamente (1 año después del ingreso)</p>
-      </div>
-
-
-
 
       <div>
         <%= form.label :active, "Estado", class: "block text-gray-700 font-semibold mb-2" %>

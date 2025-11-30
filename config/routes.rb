@@ -5,7 +5,8 @@ Rails.application.routes.draw do
     sign_out: 'logout',
     sign_up: 'registro'
   }, controllers: {
-    sessions: 'admins/sessions'
+    sessions: 'admins/sessions',
+    passwords: 'admins/passwords'
   }
   
   # Rutas administrativas
@@ -56,6 +57,7 @@ Rails.application.routes.draw do
     resources :vacations, only: [:index, :show, :edit, :update] do
       member do
         get :generate_pdf
+        patch :approve
       end
       collection do
         patch :bulk_update

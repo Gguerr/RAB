@@ -40,21 +40,25 @@ Rails.application.configure do
   # Set localhost to be used by links generated in mailer templates.
   config.action_mailer.default_url_options = { host: "localhost", port: 3000 }
   
-  # Configuración de envío de correos en desarrollo (guarda en archivos)
-  config.action_mailer.delivery_method = :file
-  config.action_mailer.file_settings = { location: Rails.root.join('tmp', 'mail') }
-  
-  # Para usar SMTP en desarrollo, descomenta y configura:
-  # config.action_mailer.delivery_method = :smtp
-  # config.action_mailer.smtp_settings = {
-  #   address: 'smtp.gmail.com',
-  #   port: 587,
-  #   domain: 'gmail.com',
-  #   user_name: 'tu_email@gmail.com',
-  #   password: 'tu_contraseña_de_aplicacion',
-  #   authentication: 'plain',
-  #   enable_starttls_auto: true
-  # }
+  # Configuración de envío de correos en desarrollo
+  # Si las credenciales SMTP están configuradas, usa SMTP; de lo contrario, guarda en archivos
+  if ENV['SMTP_USER_NAME'].present? && ENV['SMTP_PASSWORD'].present?
+    # Opción 2: Enviar correos reales por SMTP
+    config.action_mailer.delivery_method = :smtp
+    config.action_mailer.smtp_settings = {
+      address: ENV.fetch('SMTP_ADDRESS', 'smtp.gmail.com'),
+      port: ENV.fetch('SMTP_PORT', '587').to_i,
+      domain: ENV.fetch('SMTP_DOMAIN', 'gmail.com'),
+      user_name: ENV['SMTP_USER_NAME'],
+      password: ENV['SMTP_PASSWORD'],
+      authentication: :plain,
+      enable_starttls_auto: true
+    }
+  else
+    # Opción 1: Guardar en archivos (cuando no hay credenciales SMTP configuradas)
+    config.action_mailer.delivery_method = :file
+    config.action_mailer.file_settings = { location: Rails.root.join('tmp', 'mail') }
+  end
 
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log

@@ -1,0 +1,5 @@
+class AddVacationApprovedToEmployees < ActiveRecord::Migration[8.0]
+  def change
+    add_column :employees, :vacation_approved, :boolean, default: false, null: false
+  end
+end

@@ -27,6 +27,13 @@ class Admin::EmployeesController < ApplicationController
   def create
     @employee = Employee.new(employee_params)
     
+    # Si tiene fecha de ingreso anterior al año actual y no tiene fecha de vacaciones,
+    # el callback before_save calculará automáticamente para el año actual
+    # Si tiene fecha de vacaciones pero no tiene días, calcular automáticamente
+    if @employee.vacation_date.present? && @employee.vacation_days.blank?
+      @employee.vacation_days = @employee.calculate_vacation_days(@employee.vacation_date)
+    end
+    
     if @employee.save
       create_associated_records
       redirect_to admin_employee_path(@employee), notice: 'Empleado creado exitosamente.'
@@ -38,11 +45,26 @@ class Admin::EmployeesController < ApplicationController
 
   def edit
     build_associated_records
+    # Si tiene fecha de vacaciones pero no tiene días, calcular automáticamente para mostrar en el formulario
+    if @employee.vacation_date.present? && @employee.vacation_days.blank?
+      @employee.vacation_days = @employee.calculate_vacation_days(@employee.vacation_date)
+    end
   end
 
   def update
     Rails.logger.info "EMPLOYEE PARAMS: #{employee_params.inspect}"
-    if @employee.update(employee_params)
+    
+    # Si tiene fecha de vacaciones pero no tiene días, calcular automáticamente
+    if employee_params[:vacation_date].present? && employee_params[:vacation_days].blank?
+      vacation_date = Date.parse(employee_params[:vacation_date])
+      calculated_days = @employee.calculate_vacation_days(vacation_date)
+      @employee.assign_attributes(employee_params)
+      @employee.vacation_days = calculated_days
+    else
+      @employee.assign_attributes(employee_params)
+    end
+    
+    if @employee.save
       update_associated_records
       redirect_to admin_employee_path(@employee), notice: 'Empleado actualizado exitosamente.'
     else

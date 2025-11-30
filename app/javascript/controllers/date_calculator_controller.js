@@ -21,10 +21,22 @@ export default class extends Controller {
     try {
       // Parse the hire date
       const hireDate = new Date(hireDateValue)
+      const currentDate = new Date()
+      const currentYear = currentDate.getFullYear()
+      const hireYear = hireDate.getFullYear()
       
-      // Add exactly one year
-      const vacationDate = new Date(hireDate)
-      vacationDate.setFullYear(vacationDate.getFullYear() + 1)
+      let vacationDate
+      
+      // Si la fecha de ingreso es anterior al año actual, calcular para el año actual
+      if (hireYear < currentYear) {
+        // Usar el mismo día y mes de la fecha de ingreso, pero del año actual
+        // SIEMPRE usar el año actual, sin importar si la fecha ya pasó
+        vacationDate = new Date(currentYear, hireDate.getMonth(), hireDate.getDate())
+      } else {
+        // Si la fecha de ingreso es del año actual o futuro, calcular 1 año después
+        vacationDate = new Date(hireDate)
+        vacationDate.setFullYear(vacationDate.getFullYear() + 1)
+      }
       
       // Format the date as YYYY-MM-DD for the input field
       const formattedDate = vacationDate.toISOString().split('T')[0]

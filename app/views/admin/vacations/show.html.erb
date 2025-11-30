@@ -1,0 +1,456 @@
+<% content_for :page_title, "Vacaciones - #{@employee.names} #{@employee.surnames}" %>
+
+<div class="vacation-show">
+  <div class="show-header">
+    <div class="employee-info">
+      <%= image_tag "logo_Rab.png", alt: "RAB Logo", class: "employee-avatar" %>
+      <div class="employee-details">
+        <h1><%= @employee.names %> <%= @employee.surnames %></h1>
+        <p class="employee-meta">
+          <span>CI: <%= @employee.identification_number %></span>
+          <span>•</span>
+          <span>Ingreso: <%= @employee.hire_date&.strftime('%d/%m/%Y') || 'N/A' %></span>
+        </p>
+      </div>
+    </div>
+    
+    <div class="header-actions">
+      <%= link_to admin_vacations_path, class: "btn btn-secondary" do %>
+        ← Volver a Gestión
+      <% end %>
+      <%= link_to edit_admin_vacation_path(@employee), class: "btn btn-primary" do %>
+        ✏️ Editar
+      <% end %>
+    </div>
+  </div>
+
+  <div class="show-content">
+    <div class="vacation-details-card">
+      <h2>📅 Información de Vacaciones</h2>
+      
+      <% if @employee.vacation_date.present? %>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="detail-label">Fecha de Inicio:</span>
+            <span class="detail-value">
+              <%= @employee.vacation_date.strftime('%d/%m/%Y') %>
+            </span>
+          </div>
+          
+          <div class="detail-item">
+            <span class="detail-label">Días de Vacaciones:</span>
+            <span class="detail-value">
+              <%= @employee.vacation_days || 'No especificado' %>
+            </span>
+          </div>
+          
+          <% if @employee.vacation_days.present? && @employee.vacation_date.present? %>
+            <div class="detail-item">
+              <span class="detail-label">Fecha de Regreso:</span>
+              <span class="detail-value">
+                <%= (@employee.vacation_date + @employee.vacation_days.days).strftime('%d/%m/%Y') %>
+              </span>
+            </div>
+          <% end %>
+          
+          <div class="detail-item">
+            <span class="detail-label">Estado:</span>
+            <span class="detail-value">
+              <% if @employee.vacation_approved? %>
+                <% days_diff = (Date.current - @employee.vacation_date).to_i %>
+                <% vacation_end = @employee.vacation_date + @employee.vacation_days.days %>
+                <% if @employee.vacation_date <= Date.current && Date.current <= vacation_end %>
+                  <span class="status-badge status-current">✅ Aprobadas - En Vacaciones</span>
+                <% elsif @employee.vacation_date > Date.current %>
+                  <span class="status-badge status-upcoming">✅ Aprobadas - Próximas (en <%= days_diff.abs %> días)</span>
+                <% else %>
+                  <span class="status-badge status-expired">✅ Aprobadas - Vencidas (hace <%= days_diff %> días)</span>
+                <% end %>
+              <% else %>
+                <% days_diff = (Date.current - @employee.vacation_date).to_i %>
+                <% if days_diff < -7 %>
+                  <span class="status-badge status-upcoming">⏳ Pendiente de Aprobación - Próximas (en <%= days_diff.abs %> días)</span>
+                <% elsif days_diff >= -7 && days_diff <= 7 %>
+                  <span class="status-badge" style="background: #fef3c7; color: #d97706;">⏳ Pendiente de Aprobación - En curso</span>
+                <% else %>
+                  <span class="status-badge status-expired">⏳ Pendiente de Aprobación - Vencidas (hace <%= days_diff %> días)</span>
+                <% end %>
+              <% end %>
+            </span>
+          </div>
+          
+          <% if @employee.expired_vacations.present? && @employee.expired_vacations > 0 %>
+            <div class="detail-item">
+              <span class="detail-label">Días Vencidos:</span>
+              <span class="detail-value warning">
+                <%= @employee.expired_vacations %> días
+              </span>
+            </div>
+          <% end %>
+        </div>
+        
+        <% if @employee.vacation_notes.present? %>
+          <div class="notes-section">
+            <h3>📝 Observaciones</h3>
+            <p><%= @employee.vacation_notes %></p>
+          </div>
+        <% end %>
+      <% else %>
+        <div class="empty-state">
+          <div class="empty-icon">📅</div>
+          <p>Este empleado no tiene vacaciones programadas</p>
+          <%= link_to edit_admin_vacation_path(@employee), class: "btn btn-primary" do %>
+            Configurar Vacaciones
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="vacation-actions-card">
+      <h2>⚙️ Acciones</h2>
+      
+      <div class="action-buttons">
+        <% if @employee.vacation_date.present? && @employee.vacation_days.present? %>
+          <% unless @employee.vacation_approved? %>
+            <%= link_to approve_admin_vacation_path(@employee), 
+                data: { 
+                  turbo_method: :patch,
+                  turbo_confirm: "¿Está seguro de aprobar las vacaciones de #{@employee.names} #{@employee.surnames}?"
+                },
+                class: "action-btn btn-success" do %>
+              <span class="action-icon">✅</span>
+              <span class="action-text">Aprobar Vacaciones</span>
+            <% end %>
+          <% else %>
+            <div class="action-btn btn-success" style="opacity: 0.7; cursor: not-allowed;">
+              <span class="action-icon">✅</span>
+              <span class="action-text">Vacaciones Aprobadas</span>
+            </div>
+          <% end %>
+        <% end %>
+        
+        <%= link_to edit_admin_vacation_path(@employee), class: "action-btn btn-primary" do %>
+          <span class="action-icon">✏️</span>
+          <span class="action-text">Editar Vacaciones</span>
+        <% end %>
+        
+        <% if @employee.vacation_date.present? && @employee.vacation_days.present? %>
+          <%= link_to generate_pdf_admin_vacation_path(@employee), class: "action-btn btn-success", target: "_blank" do %>
+            <span class="action-icon">📄</span>
+            <span class="action-text">Generar PDF de Solicitud</span>
+          <% end %>
+        <% end %>
+        
+        <%= link_to admin_vacations_path, class: "action-btn btn-secondary" do %>
+          <span class="action-icon">←</span>
+          <span class="action-text">Volver a Gestión</span>
+        <% end %>
+      </div>
+    </div>
+
+    <% if @vacation_history.present? %>
+      <div class="vacation-history-card">
+        <h2>📜 Historial de Vacaciones</h2>
+        <p class="text-muted">El historial de vacaciones se mostrará aquí cuando esté disponible.</p>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<style>
+  :root {
+    --red-primary: #dc2626;
+    --red-secondary: #b91c1c;
+    --gray-lead: #4a5568;
+    --gray-lead-light: #718096;
+    --gray-lead-dark: #2d3748;
+    --white: #ffffff;
+    --green: #10b981;
+    --yellow: #f59e0b;
+    --blue: #3b82f6;
+  }
+
+  .vacation-show {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .show-header {
+    background: var(--white);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .employee-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .employee-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--red-primary);
+  }
+
+  .employee-details h1 {
+    margin: 0;
+    color: var(--gray-lead-dark);
+    font-size: 1.5rem;
+  }
+
+  .employee-meta {
+    margin: 0.25rem 0 0 0;
+    color: var(--gray-lead);
+    font-size: 0.9rem;
+  }
+
+  .employee-meta span {
+    margin: 0 0.5rem;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .show-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+  }
+
+  .vacation-details-card,
+  .vacation-actions-card,
+  .vacation-history-card {
+    background: var(--white);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .vacation-details-card h2,
+  .vacation-actions-card h2,
+  .vacation-history-card h2 {
+    margin: 0 0 1.5rem 0;
+    color: var(--gray-lead-dark);
+    font-size: 1.3rem;
+    border-bottom: 2px solid #f3f4f6;
+    padding-bottom: 0.5rem;
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .detail-label {
+    color: var(--gray-lead);
+    font-weight: 500;
+    font-size: 0.9rem;
+  }
+
+  .detail-value {
+    color: var(--gray-lead-dark);
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+
+  .detail-value.warning {
+    color: var(--red-primary);
+  }
+
+  .status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: inline-block;
+  }
+
+  .status-upcoming {
+    background: #dbeafe;
+    color: var(--blue);
+  }
+
+  .status-current {
+    background: #d1fae5;
+    color: var(--green);
+  }
+
+  .status-expired {
+    background: #fee2e2;
+    color: var(--red-primary);
+  }
+
+  .notes-section {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .notes-section h3 {
+    margin: 0 0 1rem 0;
+    color: var(--gray-lead-dark);
+    font-size: 1.1rem;
+  }
+
+  .notes-section p {
+    color: var(--gray-lead);
+    line-height: 1.6;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--gray-lead);
+  }
+
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+  }
+
+  .empty-state p {
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+  }
+
+  .action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+  }
+
+  .action-icon {
+    font-size: 1.5rem;
+  }
+
+  .action-text {
+    flex: 1;
+    text-align: left;
+  }
+
+  .btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-primary {
+    background: var(--red-primary);
+    color: var(--white);
+  }
+
+  .btn-primary:hover {
+    background: var(--red-secondary);
+    transform: translateY(-2px);
+  }
+
+  .btn-secondary {
+    background: var(--gray-lead);
+    color: var(--white);
+  }
+
+  .btn-success {
+    background: var(--green);
+    color: var(--white);
+  }
+
+  .btn-success:hover {
+    background: #059669;
+    transform: translateY(-2px);
+  }
+
+  .action-btn.btn-primary {
+    background: var(--red-primary);
+    color: var(--white);
+  }
+
+  .action-btn.btn-primary:hover {
+    background: var(--red-secondary);
+  }
+
+  .action-btn.btn-success {
+    background: var(--green);
+    color: var(--white);
+  }
+
+  .action-btn.btn-success:hover {
+    background: #059669;
+  }
+
+  .action-btn.btn-secondary {
+    background: var(--gray-lead);
+    color: var(--white);
+  }
+
+  .action-btn.btn-secondary:hover {
+    background: var(--gray-lead-dark);
+  }
+
+  @media (max-width: 1024px) {
+    .show-content {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .vacation-show {
+      padding: 1rem;
+    }
+    
+    .show-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    
+    .header-actions {
+      width: 100%;
+      flex-direction: column;
+    }
+    
+    .detail-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+

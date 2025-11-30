@@ -24,14 +24,7 @@
         <%= f.password_field :password, autocomplete: "current-password", class: "form-input", placeholder: "••••••••" %>
       </div>
 
-      <div class="form-group" style="display: flex; justify-content: space-between; align-items: center;">
-        <% if devise_mapping.rememberable? %>
-          <div class="checkbox-group">
-            <%= f.check_box :remember_me, { checked: false, class: "form-checkbox" }, "1", "0" %>
-            <%= f.label :remember_me, "Recordarme", class: "checkbox-label" %>
-          </div>
-        <% end %>
-        
+      <div class="form-group" style="display: flex; justify-content: flex-end; align-items: center;">
         <% if devise_mapping.recoverable? && controller_name != 'passwords' && controller_name != 'registrations' %>
           <%= link_to "¿Olvidaste tu contraseña?", new_password_path(resource_name), 
               class: "forgot-password-link", 

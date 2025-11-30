@@ -7,6 +7,19 @@ class Admins::SessionsController < Devise::SessionsController
     if admin&.valid_password?(params[:admin][:password])
       # Autenticar como Admin normalmente
       super
+      # Después de la autenticación, recargar el admin para obtener los valores actualizados
+      admin.reload
+      # Si existe un User con el mismo email, sincronizar su último acceso
+      user = User.find_by(email: admin.email)
+      if user && admin.last_sign_in_at
+        user.update_columns(
+          last_sign_in_at: admin.last_sign_in_at,
+          current_sign_in_at: admin.current_sign_in_at,
+          sign_in_count: admin.sign_in_count,
+          last_sign_in_ip: admin.last_sign_in_ip,
+          current_sign_in_ip: admin.current_sign_in_ip
+        )
+      end
     else
       # Si no es Admin, buscar en Users - permitir a cualquier usuario activo
       user = User.find_by(email: params[:admin][:email])
@@ -14,7 +27,9 @@ class Admins::SessionsController < Devise::SessionsController
       if user&.valid_password?(params[:admin][:password])
         if user.active?
           # Iniciar sesión como usuario y permitir acceso al panel admin
-          sign_in(user, scope: :user)
+          # Manejar remember_me si está presente
+          remember_me = params[:admin][:remember_me] == "1" || params[:admin][:remember_me] == true
+          sign_in(user, scope: :user, remember_me: remember_me)
           flash[:notice] = I18n.t('devise.sessions.signed_in')
           redirect_to admin_root_path
         else
